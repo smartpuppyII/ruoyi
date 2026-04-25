@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Modbus数据解析测试（完全参考PC端）</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .test-section {
+            background: #f5f5f5;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            font-family: monospace;
+            padding: 10px;
+        }
+        button {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+            background: white;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #007aff;
+            color: white;
+        }
+        .highlight {
+            background: #ffffcc;
+            font-weight: bold;
+        }
+        .success {
+            color: #52c41a;
+        }
+        .error {
+            color: #f5222d;
+        }
+        .example {
+            background: #e6f7ff;
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 3px solid #1890ff;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 Modbus数据解析测试工具</h1>
+    <p><strong>完全参考PC端 waveform.html 的解析规则</strong></p>
+    
+    <div class="example">
+        <h3>📌 解析规则说明（基于PC端waveform.html）：</h3>
+        <ul>
+            <li><strong>寄存器0</strong> → 土壤湿度 (÷10) %</li>
+            <li><strong>寄存器1</strong> → 土壤温度 (补码处理后÷10) ℃</li>
+            <li><strong>寄存器2</strong> → 电导率 (直接显示) μS/cm</li>
+            <li><strong>寄存器3</strong> → PH值 (÷10，不是÷100！)</li>
+            <li><strong>寄存器4</strong> → 氮含量 mg/kg</li>
+            <li><strong>寄存器5</strong> → 磷含量 mg/kg</li>
+            <li><strong>寄存器6</strong> → 钾含量 mg/kg</li>
+            <li><strong>寄存器7</strong> → 盐度 (÷10) ‰</li>
+            <li><strong>寄存器8</strong> → TDS mg/L</li>
+        </ul>
+    </div>
+    
+    <div class="test-section">
+        <h3>输入rawData（支持多种格式）：</h3>
+        <textarea id="rawDataInput" placeholder="例如：
+01030012 00FA 00CD 01C2 02BC 0096 0050 0078 000F 012C
+或
+01030012008000B001F40320012C00A000640014015E
+或
+0x01 0x03 0x00 0x12 0x01 0x2C 0x00 0xE6"></textarea>
+        <br><br>
+        <button onclick="testParse()">🔍 解析数据</button>
+        <button onclick="loadFromDB()">📊 从数据库加载最新数据</button>
+        <button onclick="testSamples()">📝 测试示例数据</button>
+    </div>
+    
+    <div id="result"></div>
+    
+    <script>
+        // 温度补码处理（完全参考PC端waveform.html的calcTemperature函数）
+        function calcTemperature(raw) {
+            // 补码处理：如果是负数（最高位为1），转换为负值
+            if (raw > 0x7FFF) {
+                raw = raw - 0x10000;
+            }
+            return raw / 10.0;
+        }
+        
+        // 解析Modbus数据（完全参考PC端waveform.html的parseModbusFrameFromRaw函数）
+        function parseModbusData(rawData) {
+            try {
+                if (!rawData) return null;
+                
+                // 移除0x前缀和空格，转大写
+                let hex = rawData.replace(/0x/gi, '').replace(/\s+/g, '').toUpperCase();
+                
+                // 基本验证
+                if (!/^[0-9A-F]+$/.test(hex) || hex.length < 12) return null;
+                
+                // 解析功能码
+                const functionCode = parseInt(hex.substr(2, 2), 16);
+                
+                // 只处理0x03读保持寄存器
+                if (functionCode === 0x03) {
+                    const byteCount = parseInt(hex.substr(4, 2), 16);
+                    const dataStart = 6;
+                    const dataEnd = dataStart + byteCount * 2; // byteCount是字节数，hex中每字节占2个字符
+                    const dataHex = hex.substring(dataStart, dataEnd);
+                    const registers = [];
+                    
+                    // 每个寄存器占4个十六进制字符（2字节）
+                    for (let i = 0; i + 4 <= dataHex.length; i += 4) {
+                        registers.push(parseInt(dataHex.substr(i, 4), 16));
+                    }
+                    
+                    return registers;
+                }
+                
+                return null;
+            } catch (error) {
+                console.error('解析失败:', error);
+                return null;
+            }
+        }
+        
+        function testParse() {
+            const rawData = document.getElementById('rawDataInput').value.trim();
+            if (!rawData) {
+                alert('请输入rawData');
+                return;
+            }
+            
+            displayResult(rawData);
+        }
+        
+        function displayResult(rawData) {
+            const registers = parseModbusData(rawData);
+            let output = '<h2>📊 解析结果</h2>';
+            
+            output += '<div style="background: #f0f0f0; padding: 10px; margin: 10px 0;">';
+            output += '<strong>原始数据:</strong> <code>' + rawData + '</code>';
+            output += '</div>';
+            
+            if (!registers) {
+                output += '<p class="error">❌ 解析失败！请检查数据格式</p>';
+            } else {
+                output += '<p class="success">✅ 解析成功！共 ' + registers.length + ' 个寄存器</p>';
+                
+                output += '<h3>🔢 寄存器原始值:</h3>';
+                output += '<table><tr><th>索引</th><th>十六进制</th><th>十进制</th></tr>';
+                registers.forEach((reg, i) => {
+                    const hex = reg.toString(16).toUpperCase().padStart(4, '0');
+                    output += `<tr><td>寄存器${i}</td><td>0x${hex}</td><td>${reg}</td></tr>`;
+                });
+                output += '</table>';
+                
+                if (registers.length >= 9) {
+                    output += '<h3>🌱 传感器数据（完全参考PC端waveform.html）:</h3>';
+                    output += '<table>';
+                    output += '<tr><th>寄存器</th><th>参数名称</th><th>原始值</th><th>计算后的值</th><th>说明</th></tr>';
+                    
+                    const params = [
+                        { name: '土壤湿度', unit: '%', calc: (v) => (v / 10).toFixed(1), note: '÷10' },
+                        { name: '土壤温度', unit: '℃', calc: (v) => calcTemperature(v).toFixed(1), note: '补码处理后÷10' },
+                        { name: '电导率', unit: 'μS/cm', calc: (v) => v.toFixed(0), note: '直接显示' },
+                        { name: 'PH值', unit: '', calc: (v) => (v / 10).toFixed(1), note: '÷10 (不是÷100!)' },
+                        { name: '氮含量', unit: 'mg/kg', calc: (v) => v.toFixed(0), note: '直接显示' },
+                        { name: '磷含量', unit: 'mg/kg', calc: (v) => v.toFixed(0), note: '直接显示' },
+                        { name: '钾含量', unit: 'mg/kg', calc: (v) => v.toFixed(0), note: '直接显示' },
+                        { name: '盐度', unit: '‰', calc: (v) => (v / 10).toFixed(1), note: '÷10' },
+                        { name: 'TDS', unit: 'mg/L', calc: (v) => v.toFixed(0), note: '直接显示' }
+                    ];
+                    
+                    registers.forEach((reg, i) => {
+                        if (i < params.length) {
+                            output += `<tr>
+                                <td>寄存器${i}</td>
+                                <td><strong>${params[i].name}</strong></td>
+                                <td>${reg}</td>
+                                <td class="highlight">${params[i].calc(reg)} ${params[i].unit}</td>
+                                <td>${params[i].note}</td>
+                            </tr>`;
+                        }
+                    });
+                    output += '</table>';
+                }
+            }
+            
+            document.getElementById('result').innerHTML = output;
+        }
+        
+        function testSamples() {
+            const samples = [
+                '01030012 00FA 00CD 01C2 02BC 0096 0050 0078 000F 012C',
+                '01030012008000B001F40320012C00A000640014015E',
+                '0x01 0x03 0x00 0x12 0x01 0x2C 0x00 0xE6 0x02 0x58 0x03 0x20 0x00 0xC8 0x00 0x64 0x00 0x96 0x00 0x0A 0x01 0x90'
+            ];
+            
+            let output = '<h2>📝 示例数据测试</h2>';
+            
+            samples.forEach((sample, idx) => {
+                const registers = parseModbusData(sample);
+                output += `<div style="margin: 20px 0; padding: 15px; background: ${idx % 2 === 0 ? '#f9f9f9' : '#fff'}; border: 1px solid #ddd;">`;
+                output += `<h4>示例 ${idx + 1}:</h4>`;
+                output += `<code>${sample}</code><br>`;
+                
+                if (registers && registers.length >= 9) {
+                    output += `<p class="success">✅ 解析成功</p>`;
+                    output += `<p>湿度: ${(registers[0]/10).toFixed(1)}% | `;
+                    output += `温度: ${calcTemperature(registers[1]).toFixed(1)}℃ | `;
+                    output += `PH: ${(registers[3]/10).toFixed(1)} | `;
+                    output += `氮: ${registers[4]} mg/kg</p>`;
+                } else {
+                    output += `<p class="error">❌ 解析失败</p>`;
+                }
+                output += '</div>';
+            });
+            
+            document.getElementById('result').innerHTML = output;
+        }
+        
+        async function loadFromDB() {
+            alert('请在命令行运行: 诊断移动端数据问题.bat\n然后复制rawData到这里测试');
+        }
+    </script>
+</body>
+</html>
+
+

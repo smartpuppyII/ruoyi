@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>物联网数据显示 v4.0</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/font-awesome.min.css}">
+    <link rel="stylesheet" th:href="@{/css/style.min.css}">
+    <link rel="stylesheet" th:href="@{/ruoyi/css/ry-ui.css}">
+    <script th:src="@{/js/jquery.min.js}"></script>
+    <script th:src="@{/js/bootstrap.min.js}"></script>
+    <script th:src="@{/ajax/libs/layer/layer.min.js?v=3.7.0}"></script>
+    
+    <style>
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-online {
+            background-color: #5cb85c;
+            animation: pulse 2s infinite;
+        }
+        .status-offline {
+            background-color: #d9534f;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .device-selector {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .info-panels {
+            margin-bottom: 20px;
+        }
+        .info-panel {
+            background: #fff;
+            border: 1px solid #e7eaec;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        .info-panel h5 {
+            margin: 0 0 10px 0;
+            color: #676a6c;
+            font-weight: bold;
+        }
+        .info-panel .value {
+            font-size: 18px;
+            color: #1ab394;
+            font-weight: bold;
+        }
+        .data-container {
+            background: #fff;
+            border: 1px solid #e7eaec;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .data-tabs {
+            margin-bottom: 20px;
+        }
+        .data-tabs .nav-tabs {
+            border-bottom: 2px solid #e7eaec;
+        }
+        .data-tabs .nav-tabs .nav-link {
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: #676a6c;
+            font-weight: bold;
+        }
+        .data-tabs .nav-tabs .nav-link.active {
+            background: none;
+            border-bottom: 2px solid #1ab394;
+            color: #1ab394;
+        }
+        .data-view {
+            min-height: 200px;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        /* 地力评价面板样式 */
+        .soil-fertility-panel {
+            background: #fff;
+            border: 1px solid #e7eaec;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .fertility-panel {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+            text-align: center;
+            height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .fertility-panel h6 {
+            margin: 0 0 10px 0;
+            color: #676a6c;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .fertility-value {
+            font-size: 24px;
+            color: #1ab394;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .fertility-unit {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .fertility-status {
+            margin-top: 10px;
+        }
+        
+        .fertility-time {
+            font-size: 12px;
+            color: #999;
+            margin-top: 10px;
+        }
+        
+        .weight-distribution, .level-standards {
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+        }
+        
+        .weight-item, .level-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .weight-item:last-child, .level-item:last-child {
+            border-bottom: none;
+        }
+        
+        .weight-label, .level-grade {
+            color: #676a6c;
+            font-size: 13px;
+        }
+        
+        .weight-value, .level-range {
+            color: #1ab394;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        
+        .level-range {
+            background: #e8f5e8;
+            padding: 2px 8px;
+            border-radius: 3px;
+        }
+        .json-viewer {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .json-key {
+            color: #63b3ed;
+        }
+        .json-string {
+            color: #68d391;
+        }
+        .json-number {
+            color: #fbb6ce;
+        }
+        .json-boolean {
+            color: #faf089;
+        }
+        .json-null {
+            color: #a0aec0;
+        }
+        .hex-viewer {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .hex-address {
+            color: #9ca3af;
+            margin-right: 10px;
+        }
+        .hex-data {
+            color: #60a5fa;
+            margin-right: 10px;
+        }
+        .hex-ascii {
+            color: #34d399;
+        }
+        .data-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .summary-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #e9ecef;
+        }
+        .summary-label {
+            display: block;
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .summary-value {
+            font-size: 18px;
+            color: #007bff;
+            font-weight: bold;
+            word-break: break-all;
+        }
+        .recent-data {
+            margin-top: 20px;
+        }
+        .recent-data h6 {
+            margin-bottom: 15px;
+            color: #676a6c;
+            font-weight: bold;
+        }
+        .table th {
+            background-color: #f8f9fa;
+            border-top: none;
+        }
+        .refresh-controls {
+            margin-bottom: 15px;
+            text-align: right;
+        }
+        .refresh-controls .btn {
+            margin-left: 10px;
+        }
+        .auto-refresh-indicator {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .auto-refresh-indicator.paused {
+            color: #dc3545;
+        }
+        .data-type-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .data-type-json {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .data-type-hex {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .data-type-text {
+            background: #d4edda;
+            color: #155724;
+        }
+        .data-type-unknown {
+            background: #f1f3f4;
+            color: #6c757d;
+        }
+        .sensor-trend-chart {
+            min-height: 200px; /* Ensure chart has a minimum height */
+        }
+        .sensor-panels {
+            background: #f9f9f9;
+            border: 1px solid #e7eaec;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        .sensor-panel {
+            background: #fff;
+            border: 1px solid #e7eaec;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .sensor-panel h6 {
+            margin-bottom: 5px;
+            color: #676a6c;
+            font-weight: bold;
+        }
+        .sensor-value {
+            font-size: 24px;
+            color: #1ab394;
+            font-weight: bold;
+        }
+        .sensor-unit {
+            font-size: 14px;
+            color: #676a6c;
+        }
+        .sensor-status .badge {
+            font-size: 14px;
+        }
+        .sensor-data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+        .modbus-frame-info, .modbus-register-data {
+            margin-bottom: 20px;
+        }
+        .modbus-frame-info h6, .modbus-register-data h6 {
+            color: #676a6c;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .table-sm th, .table-sm td {
+            padding: 8px;
+            font-size: 13px;
+        }
+        .sensor-value.alert {
+            color: #d9534f;
+        }
+        .sensor-value.warning {
+            color: #f0ad4e;
+        }
+        .sensor-value.normal {
+            color: #1ab394;
+        }
+    </style>
+</head>
+
+<body class="gray-bg">
+    <div class="wrapper wrapper-content animated fadeInRight">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="ibox">
+                    <div class="ibox-content">
+                        <!-- 设备选择器 -->
+                        <div class="device-selector">
+                            <label for="deviceSelect">选择设备：</label>
+                            <select id="deviceSelect" class="form-control" style="width: 200px; display: inline-block;">
+                                <option value="">请选择设备</option>
+                            </select>
+                            <button type="button" class="btn btn-primary" onclick="refreshDevices()">
+                                <i class="fa fa-refresh"></i> 刷新设备
+                            </button>
+                            <span class="connection-status" style="margin-left: 20px;">
+                                <span class="status-indicator status-online" id="connectionStatus"></span>
+                                <span id="connectionText">已连接</span>
+                            </span>
+                        </div>
+
+                        <!-- 设备信息面板 -->
+                        <div class="info-panels">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="info-panel">
+                                        <h5>设备名称</h5>
+                                        <div class="value" id="deviceName">--</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="info-panel">
+                                        <h5>设备类型</h5>
+                                        <div class="value" id="deviceType">--</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="info-panel">
+                                        <h5>设备ID</h5>
+                                        <div class="value" id="deviceId">--</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="info-panel">
+                                        <h5>更新时间</h5>
+                                        <div class="value" id="updateTime">--</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 传感器数据面板 -->
+                        <div class="sensor-panels" id="sensorPanels" style="display: none;">
+                            <h5 style="margin-bottom: 15px; color: #676a6c; font-weight: bold;">
+                                <i class="fa fa-thermometer-half"></i> 传感器实时数据
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-2">
+                                    <div class="sensor-panel">
+                                        <h6>温度</h6>
+                                        <div class="sensor-value" id="temperatureValue">--</div>
+                                        <div class="sensor-unit">°C</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="sensor-panel">
+                                        <h6>湿度</h6>
+                                        <div class="sensor-value" id="humidityValue">--</div>
+                                        <div class="sensor-unit">%</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="sensor-panel">
+                                        <h6>电导率</h6>
+                                        <div class="sensor-value" id="conductivityValue">--</div>
+                                        <div class="sensor-unit">μS/cm</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="sensor-panel">
+                                        <h6>PH值</h6>
+                                        <div class="sensor-value" id="phValue">--</div>
+                                        <div class="sensor-unit"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="sensor-panel">
+                                        <h6>氮含量</h6>
+                                        <div class="sensor-value" id="nitrogenValue">--</div>
+                                        <div class="sensor-unit">mg/kg</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="sensor-panel">
+                                        <h6>磷含量</h6>
+                                        <div class="sensor-value" id="phosphorusValue">--</div>
+                                        <div class="sensor-unit">mg/kg</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row" style="margin-top: 15px;">
+                                <div class="col-md-2">
+                                    <div class="sensor-panel">
+                                        <h6>钾含量</h6>
+                                        <div class="sensor-value" id="potassiumValue">--</div>
+                                        <div class="sensor-unit">mg/kg</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="sensor-panel">
+                                        <h6>盐度</h6>
+                                        <div class="sensor-value" id="salinityValue">--</div>
+                                        <div class="sensor-unit">‰</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="sensor-panel">
+                                        <h6>TDS</h6>
+                                        <div class="sensor-value" id="tdsValue">--</div>
+                                        <div class="sensor-unit">mg/L</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="sensor-panel">
+                                        <h6>数据状态</h6>
+                                        <div class="sensor-status" id="sensorStatus">
+                                            <span class="badge badge-secondary">等待数据...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 综合地力评价面板 -->
+                        <div class="soil-fertility-panel" id="soilFertilityPanel" style="display: none;">
+                            <h5 style="margin-bottom: 15px; color: #676a6c; font-weight: bold;">
+                                <i class="fa fa-leaf"></i> 天然打草场地力综合评价
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="fertility-panel">
+                                        <h6>综合地力指数</h6>
+                                        <div class="fertility-value" id="fertilityIndex">--</div>
+                                        <div class="fertility-unit">综合指数</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="fertility-panel">
+                                        <h6>地力等级</h6>
+                                        <div class="fertility-value" id="fertilityLevel">--</div>
+                                        <div class="fertility-unit">等级评定</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="fertility-panel">
+                                        <h6>评价状态</h6>
+                                        <div class="fertility-status" id="fertilityStatus">
+                                            <span class="badge badge-secondary">等待数据...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="fertility-panel">
+                                        <h6>更新时间</h6>
+                                        <div class="fertility-time" id="fertilityUpdateTime">--</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 地力评价详情 -->
+                            <div class="fertility-details" style="margin-top: 20px;">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>指标权重分布</h6>
+                                        <div class="weight-distribution">
+                                            <div class="weight-item">
+                                                <span class="weight-label">有机质、全氮、微生物碳、根系层深度</span>
+                                                <span class="weight-value">60%</span>
+                                            </div>
+                                            <div class="weight-item">
+                                                <span class="weight-label">土壤紧实度（或容重）、土壤质地</span>
+                                                <span class="weight-value">30%</span>
+                                            </div>
+                                            <div class="weight-item">
+                                                <span class="weight-label">PH、含盐量</span>
+                                                <span class="weight-value">10%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>地力等级标准</h6>
+                                        <div class="level-standards">
+                                            <div class="level-item">
+                                                <span class="level-grade">一级（高）</span>
+                                                <span class="level-range">>0.9</span>
+                                            </div>
+                                            <div class="level-item">
+                                                <span class="level-grade">二级（较高）</span>
+                                                <span class="level-range">0.8~0.9</span>
+                                            </div>
+                                            <div class="level-item">
+                                                <span class="level-grade">三级（中）</span>
+                                                <span class="level-range">0.6~0.8</span>
+                                            </div>
+                                            <div class="level-item">
+                                                <span class="level-grade">四级（较低）</span>
+                                                <span class="level-range">0.4~0.6</span>
+                                            </div>
+                                            <div class="level-item">
+                                                <span class="level-grade">五级（低）</span>
+                                                <span class="level-range"><0.4</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 数据显示区域 -->
+                        <div class="data-container">
+                            <div class="refresh-controls">
+                                <button type="button" class="btn btn-success btn-sm" id="toggleAutoRefresh">
+                                    <i class="fa fa-play"></i> <span id="autoRefreshText">启动自动刷新</span>
+                                </button>
+                                <button type="button" class="btn btn-primary btn-sm" onclick="manualRefresh()">
+                                    <i class="fa fa-refresh"></i> 手动刷新
+                                </button>
+                                <button type="button" class="btn btn-info btn-sm" onclick="sendModbusCommand()">
+                                    <i class="fa fa-terminal"></i> 发送Modbus命令
+                                </button>
+                                <span class="auto-refresh-indicator" id="autoRefreshIndicator">自动刷新: 已停止</span>
+                            </div>
+
+                            <!-- 数据概要 -->
+                            <div class="data-summary">
+                                <div class="summary-item">
+                                    <span class="summary-label">数据类型:</span>
+                                    <span class="summary-value" id="dataTypeValue">--</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-label">数据大小:</span>
+                                    <span class="summary-value" id="dataSizeValue">--</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-label">接收时间:</span>
+                                    <span class="summary-value" id="timestampValue">--</span>
+                                </div>
+                                <div class="summary-item">
+                                    <span class="summary-label">状态码:</span>
+                                    <span class="summary-value" id="statusValue">--</span>
+                                </div>
+                            </div>
+
+                            <!-- 数据查看选项卡 -->
+                            <div class="data-tabs">
+                                <ul class="nav nav-tabs" id="dataViewTabs">
+                                    <li class="nav-item">
+                                        <a class="nav-link active" id="summary-tab" data-toggle="tab" href="#summary-view">数据概览</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="sensor-tab" data-toggle="tab" href="#sensor-view">传感器数据</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="modbus-tab" data-toggle="tab" href="#modbus-view">Modbus解析</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="json-tab" data-toggle="tab" href="#json-view">JSON格式</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="hex-tab" data-toggle="tab" href="#hex-view">HEX格式</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="raw-tab" data-toggle="tab" href="#raw-view">原始数据</a>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!-- 数据视图内容 -->
+                            <div class="tab-content" id="dataViewContent">
+                                <!-- 数据概览 -->
+                                <div class="tab-pane fade show active" id="summary-view">
+                                    <div class="data-view">
+                                        <div id="summaryContent">
+                                            <p class="text-muted text-center">请选择设备并获取数据</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 传感器数据视图 -->
+                                <div class="tab-pane fade" id="sensor-view">
+                                    <div class="data-view">
+                                        <div id="sensorContent">
+                                            <div class="sensor-data-grid">
+                                                <div class="row">
+                                                    <div class="col-md-6">
+                                                        <h6>传感器数据详情</h6>
+                                                        <table class="table table-sm">
+                                                            <tbody id="sensorDataTable">
+                                                                <tr><td colspan="2" class="text-center">暂无传感器数据</td></tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <h6>数据趋势</h6>
+                                                        <div id="sensorTrendChart" style="height: 200px;">
+                                                            <p class="text-muted text-center">暂无趋势数据</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Modbus解析视图 -->
+                                <div class="tab-pane fade" id="modbus-view">
+                                    <div class="data-view">
+                                        <div id="modbusContent">
+                                            <div class="modbus-frame-info">
+                                                <h6>Modbus帧结构</h6>
+                                                <table class="table table-sm table-bordered">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>字段</th>
+                                                            <th>值</th>
+                                                            <th>说明</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="modbusFrameTable">
+                                                        <tr><td colspan="3" class="text-center">暂无Modbus数据</td></tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div class="modbus-register-data">
+                                                <h6>寄存器数据</h6>
+                                                <table class="table table-sm table-bordered">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>寄存器地址</th>
+                                                            <th>原始值(HEX)</th>
+                                                            <th>计算值</th>
+                                                            <th>传感器类型</th>
+                                                            <th>单位</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="modbusRegisterTable">
+                                                        <tr><td colspan="5" class="text-center">暂无寄存器数据</td></tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- JSON格式视图 -->
+                                <div class="tab-pane fade" id="json-view">
+                                    <div class="data-view">
+                                        <div class="json-viewer" id="jsonViewer">
+                                            <p class="text-muted">暂无JSON数据</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- HEX格式视图 -->
+                                <div class="tab-pane fade" id="hex-view">
+                                    <div class="data-view">
+                                        <div class="hex-viewer" id="hexViewer">
+                                            <p class="text-muted">暂无HEX数据</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 原始数据视图 -->
+                                <div class="tab-pane fade" id="raw-view">
+                                    <div class="data-view">
+                                        <pre id="rawViewer" style="background: #f8f9fa; padding: 15px; border-radius: 5px; max-height: 400px; overflow: auto;">暂无原始数据</pre>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 历史数据表格 -->
+                            <div class="recent-data">
+                                <h6>历史数据记录 <small class="text-muted">(最新20条)</small></h6>
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th width="20%">接收时间</th>
+                                                <th width="15%">设备ID</th>
+                                                <th width="15%">数据类型</th>
+                                                <th width="20%">数据摘要</th>
+                                                <th width="15%">数据大小</th>
+                                                <th width="15%">状态</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="dataTableBody">
+                                            <tr>
+                                                <td colspan="6" class="text-center">等待数据...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        // 定义上下文路径
+        var ctx = [[@{/}]];
+        
+        // 版本标识 - v4.0 多格式数据支持版本
+        console.log('物联网数据显示 v4.0 - 已加载 (多格式数据支持版本)');
+        
+        let currentData = null;
+        let historyData = [];
+        const MAX_RECORDS = 20;
+        let selectedDeviceId = null;
+        let refreshTimer = null;
+        let autoRefreshEnabled = false;
+
+        // 页面初始化
+        $(document).ready(function() {
+            console.log('页面初始化开始...');
+            loadDevices();
+            initDataTable();
+            setupEventHandlers();
+            console.log('页面初始化完成');
+        });
+
+        // 设置事件处理器
+        function setupEventHandlers() {
+            // 设备选择事件
+            $('#deviceSelect').change(function() {
+                selectedDeviceId = $(this).val();
+                console.log('选择设备:', selectedDeviceId);
+                
+                if (selectedDeviceId) {
+                    loadDeviceData(selectedDeviceId);
+                    clearDataDisplay();
+                    loadHistoryData();
+                } else {
+                    clearDataDisplay();
+                }
+            });
+
+            // 自动刷新切换
+            $('#toggleAutoRefresh').click(function() {
+                if (autoRefreshEnabled) {
+                    stopAutoRefresh();
+                } else {
+                    startAutoRefresh();
+                }
+            });
+        }
+
+        // 初始化数据表格
+        function initDataTable() {
+            $('#dataTableBody').html('<tr><td colspan="6" class="text-center">等待数据...</td></tr>');
+        }
+
+        // 加载设备列表
+        function loadDevices() {
+            $.ajax({
+                url: ctx + 'system/iotdevice/list',
+                type: 'GET',
+                success: function(result) {
+                    console.log('设备列表API响应:', result);
+                    
+                    if (result.code === 0 && result.data) {
+                        const devices = result.data;
+                        const select = $('#deviceSelect');
+                        select.empty();
+                        select.append('<option value="">请选择设备</option>');
+                        
+                        devices.forEach(function(device) {
+                            select.append(`<option value="${device.deviceId}">${device.deviceName} (${device.deviceType})</option>`);
+                        });
+                        console.log('设备列表加载成功，共' + devices.length + '个设备');
+                    } else {
+                        console.error('设备列表API返回错误:', result);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('加载设备列表失败:', error);
+                    $.modal.alertError("加载设备列表失败");
+                }
+            });
+        }
+
+        // 刷新设备列表
+        function refreshDevices() {
+            loadDevices();
+        }
+
+        // 启动自动刷新
+        function startAutoRefresh() {
+            if (!selectedDeviceId) {
+                $.modal.alertWarning("请先选择设备");
+                return;
+            }
+
+            autoRefreshEnabled = true;
+            $('#toggleAutoRefresh').removeClass('btn-success').addClass('btn-warning');
+            $('#toggleAutoRefresh .fa').removeClass('fa-play').addClass('fa-pause');
+            $('#autoRefreshText').text('停止自动刷新');
+            $('#autoRefreshIndicator').removeClass('paused').text('自动刷新: 运行中');
+
+            // 立即刷新一次
+            refreshLatestData();
+            
+            // 每5秒刷新一次
+            refreshTimer = setInterval(refreshLatestData, 5000);
+            console.log('自动刷新已启动 (5秒间隔)');
+        }
+
+        // 停止自动刷新
+        function stopAutoRefresh() {
+            autoRefreshEnabled = false;
+            $('#toggleAutoRefresh').removeClass('btn-warning').addClass('btn-success');
+            $('#toggleAutoRefresh .fa').removeClass('fa-pause').addClass('fa-play');
+            $('#autoRefreshText').text('启动自动刷新');
+            $('#autoRefreshIndicator').addClass('paused').text('自动刷新: 已停止');
+
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+                refreshTimer = null;
+            }
+            console.log('自动刷新已停止');
+        }
+
+        // 手动刷新
+        function manualRefresh() {
+            if (!selectedDeviceId) {
+                $.modal.alertWarning("请先选择设备");
+                return;
+            }
+            refreshLatestData();
+            loadSensorsSnapshot(selectedDeviceId);
+        }
+
+        // 刷新最新数据
+        function refreshLatestData() {
+            if (!selectedDeviceId) {
+                return;
+            }
+            
+            $.ajax({
+                url: ctx + 'system/iot/waveform/latest/' + selectedDeviceId,
+                type: 'GET',
+                success: function(result) {
+                    if (result.code === 0 && result.data) {
+                        console.log('获取到最新数据:', result.data);
+                        currentData = result.data;
+                        updateDataDisplay(result.data);
+                        loadHistoryData(); // 重新加载历史数据
+                        loadSensorsSnapshot(selectedDeviceId);
+                    }
+                },
+                error: function() {
+                    console.error('获取最新数据失败');
+                }
+            });
+        }
+
+        // 加载传感器最新快照（聚合接口）
+        function loadSensorsSnapshot(deviceId) {
+            $.ajax({
+                url: ctx + 'system/iotmqtt/sensors/' + deviceId,
+                type: 'GET',
+                success: function(res) {
+                    if (res.code === 0 && res.data) {
+                        const d = res.data;
+                        $('#sensorPanels').show();
+                        if (d.temperature !== undefined) $('#temperatureValue').text(Number(d.temperature).toFixed(1));
+                        if (d.humidity !== undefined) $('#humidityValue').text(Number(d.humidity).toFixed(1));
+                        if (d.conductivity !== undefined) $('#conductivityValue').text(Number(d.conductivity).toFixed(0));
+                        if (d.ph !== undefined) $('#phValue').text(Number(d.ph).toFixed(1));
+                        if (d.nitrogen !== undefined) $('#nitrogenValue').text(Number(d.nitrogen).toFixed(1));
+                        if (d.phosphorus !== undefined) $('#phosphorusValue').text(Number(d.phosphorus).toFixed(1));
+                        if (d.potassium !== undefined) $('#potassiumValue').text(Number(d.potassium).toFixed(1));
+                        if (d.salinity !== undefined) $('#salinityValue').text(Number(d.salinity).toFixed(2));
+                        if (d.tds !== undefined) $('#tdsValue').text(Number(d.tds).toFixed(0));
+                        $('#sensorStatus').html('<span class="badge badge-success">已更新</span>');
+                        $('#updateTime').text(new Date().toLocaleString());
+                    }
+                }
+            });
+        }
+
+        // 发送Modbus命令（HEX字符串，发往GE_sub）
+        function sendModbusCommand() {
+            if (!selectedDeviceId) {
+                $.modal.alertWarning('请先选择设备');
+                return;
+            }
+            layer.prompt({
+                formType: 2,
+                title: '发送Modbus指令（HEX，不含0x，示例：0103000000044409）',
+                area: ['520px', '220px'],
+                btn: ['发送', '取消'],
+                content: '0103000000044409'
+            }, function(value, index) {
+                const cmd = String(value || '').trim();
+                if (!/^[0-9A-Fa-f]+$/.test(cmd)) {
+                    $.modal.alertWarning('命令必须是HEX字符串');
+                    return;
+                }
+                $.ajax({
+                    type: 'POST',
+                    url: ctx + 'system/iotmqtt/send/' + selectedDeviceId,
+                    data: { command: cmd.toUpperCase() },
+                    success: function(result) {
+                        if (result.code == 0) {
+                            $.modal.msgSuccess('命令发送成功');
+                            setTimeout(function(){ refreshLatestData(); }, 1200);
+                        } else {
+                            $.modal.msgError(result.msg || '发送失败');
+                        }
+                        layer.close(index);
+                    },
+                    error: function() {
+                        $.modal.msgError('请求失败');
+                    }
+                });
+            });
+        }
+
+        // 加载设备数据
+        function loadDeviceData(deviceId) {
+            console.log('加载设备数据，设备ID:', deviceId);
+            
+            // 获取设备信息
+            $.ajax({
+                url: ctx + 'system/iotdevice/' + deviceId,
+                type: 'GET',
+                success: function(result) {
+                    console.log('设备信息API响应:', result);
+                    if (result.code === 0) {
+                        updateDeviceInfo(result.data);
+                    }
+                }
+            });
+        }
+
+        // 加载历史数据
+        function loadHistoryData() {
+            if (!selectedDeviceId) {
+                return;
+            }
+
+            $.ajax({
+                url: ctx + 'system/iot/waveform/history/' + selectedDeviceId,
+                type: 'GET',
+                success: function(result) {
+                    if (result.code === 0 && result.data) {
+                        console.log('获取到历史数据:', result.data);
+                        historyData = result.data;
+                        updateHistoryTable();
+                    }
+                },
+                error: function() {
+                    console.error('获取历史数据失败');
+                }
+            });
+        }
+
+        // 更新设备信息
+        function updateDeviceInfo(device) {
+            console.log('更新设备信息:', device);
+            $('#deviceName').text(device.deviceName || '--');
+            $('#deviceType').text(device.deviceType || '--');
+            $('#deviceId').text(device.deviceId || '--');
+            $('#updateTime').text(device.updateTime || device.lastCommunication || '--');
+        }
+
+        // 更新数据显示
+        function updateDataDisplay(data) {
+            console.log('更新数据显示:', data);
+            
+            // 检测数据类型
+            const dataType = detectDataType(data.rawData);
+            const dataSize = calculateDataSize(data.rawData);
+            
+            // 更新概要信息
+            $('#dataTypeValue').html(getDataTypeBadge(dataType));
+            $('#dataSizeValue').text(dataSize);
+            
+            // 处理时间戳
+            let timestamp = data.createTime || new Date().toLocaleString();
+            $('#timestampValue').text(timestamp);
+            
+            // 状态信息
+            let status = data.statusCode || 'OK';
+            $('#statusValue').text(status);
+            
+            // 更新各个视图
+            updateSummaryView(data);
+            updateJsonView(data.rawData);
+            updateHexView(data.rawData);
+            updateRawView(data.rawData);
+
+            // 如果是HEX(Modbus)数据，尝试解析并更新Modbus视图与传感器卡片
+            if (dataType === 'hex' && data.rawData) {
+                const frame = parseModbusFrameFromRaw(data.rawData);
+                if (frame) {
+                    updateModbusViews(frame);
+                    // 根据寄存器顺序更新常见传感器（0:湿度,1:温度,2:电导率,3:PH,4:氮,5:磷,6:钾,7:盐度,8:TDS）
+                    if (frame.registers && frame.registers.length >= 4) {
+                        const r = frame.registers;
+                        $('#sensorPanels').show();
+                        if (r[1] != null) $('#temperatureValue').text(calcTemperature(r[1]).toFixed(1));
+                        if (r[0] != null) $('#humidityValue').text((r[0] / 10).toFixed(1));
+                        if (r[2] != null) $('#conductivityValue').text((r[2]).toFixed(0));
+                        if (r[3] != null) $('#phValue').text((r[3] / 10).toFixed(1));
+                        if (r[4] != null) $('#nitrogenValue').text((r[4]).toFixed(0));
+                        if (r[5] != null) $('#phosphorusValue').text((r[5]).toFixed(0));
+                        if (r[6] != null) $('#potassiumValue').text((r[6]).toFixed(0));
+                        if (r[7] != null) $('#salinityValue').text((r[7] / 10).toFixed(1));
+                        if (r[8] != null) $('#tdsValue').text((r[8]).toFixed(0));
+                        $('#sensorStatus').html('<span class="badge badge-info">来自当前Modbus帧</span>');
+                        $('#updateTime').text(new Date().toLocaleString());
+                        
+                        // 计算并更新地力评价
+                        calculateSoilFertility(r);
+                    }
+                }
+            }
+        }
+
+        // 解析原始字符串为Modbus帧结构
+        function parseModbusFrameFromRaw(raw) {
+            try {
+                let hex = raw.replace(/0x/gi, '').replace(/\s+/g, '').toUpperCase();
+                if (!/^[0-9A-F]+$/.test(hex) || hex.length < 12) return null;
+                const address = parseInt(hex.substr(0, 2), 16);
+                const functionCode = parseInt(hex.substr(2, 2), 16);
+                if (![0x03, 0x06, 0x10].includes(functionCode)) return null;
+
+                if (functionCode === 0x03) {
+                    const byteCount = parseInt(hex.substr(4, 2), 16);
+                    const dataStart = 6;
+                    const dataEnd = dataStart + byteCount;
+                    const crcLow = parseInt(hex.substr(dataEnd, 2), 16);
+                    const crcHigh = parseInt(hex.substr(dataEnd + 2, 2), 16);
+                    const dataHex = hex.substring(dataStart, dataEnd);
+                    const registers = [];
+                    for (let i = 0; i + 4 <= dataHex.length; i += 4) {
+                        registers.push(parseInt(dataHex.substr(i, 4), 16));
+                    }
+                    return { address, functionCode, byteCount, dataHex, crcLow, crcHigh, registers };
+                }
+                return { address, functionCode };
+            } catch (e) {
+                console.warn('Modbus解析失败', e);
+                return null;
+            }
+        }
+
+        // 更新Modbus标签页视图
+        function updateModbusViews(frame) {
+            const frameTable = $('#modbusFrameTable');
+            frameTable.empty();
+            const rows = [
+                ['地址码', '0x' + frame.address.toString(16).padStart(2, '0').toUpperCase(), '设备地址'],
+                ['功能码', '0x' + frame.functionCode.toString(16).padStart(2, '0').toUpperCase(), '读保持寄存器(0x03)'],
+                ['字节数', String(frame.byteCount || 0), '数据字节数'],
+                ['CRC低字节', frame.crcLow != null ? ('0x' + frame.crcLow.toString(16).padStart(2, '0').toUpperCase()) : '--', 'CRC低字节'],
+                ['CRC高字节', frame.crcHigh != null ? ('0x' + frame.crcHigh.toString(16).padStart(2, '0').toUpperCase()) : '--', 'CRC高字节']
+            ];
+            rows.forEach(r => {
+                frameTable.append(`<tr><td>${r[0]}</td><td><code>${r[1]}</code></td><td>${r[2]}</td></tr>`);
+            });
+
+            const regTable = $('#modbusRegisterTable');
+            regTable.empty();
+            if (frame.registers && frame.registers.length) {
+                for (let i = 0; i < frame.registers.length; i++) {
+                    const raw = frame.registers[i];
+                    const sensorType = sensorTypeByIndex(i);
+                    const unit = unitByType(sensorType);
+                    const calc = calcByType(sensorType, raw);
+                    regTable.append(`<tr>
+                        <td>0x${i.toString(16).padStart(4, '0').toUpperCase()}</td>
+                        <td><code>0x${raw.toString(16).padStart(4, '0').toUpperCase()}</code></td>
+                        <td>${Number(calc).toFixed(sensorType === 'conductivity' || sensorType === 'tds' ? 0 : 1)}</td>
+                        <td>${sensorTypeName(sensorType)}</td>
+                        <td>${unit}</td>
+                    </tr>`);
+                }
+            } else {
+                regTable.html('<tr><td colspan="5" class="text-center">无寄存器数据</td></tr>');
+            }
+        }
+
+        function sensorTypeByIndex(i) {
+            switch (i) {
+                case 0: return 'humidity';
+                case 1: return 'temperature';
+                case 2: return 'conductivity';
+                case 3: return 'ph';
+                case 4: return 'nitrogen';
+                case 5: return 'phosphorus';
+                case 6: return 'potassium';
+                case 7: return 'salinity';
+                case 8: return 'tds';
+                default: return 'unknown';
+            }
+        }
+
+        function unitByType(t) {
+            switch (t) {
+                case 'humidity': return '%';
+                case 'temperature': return '°C';
+                case 'conductivity': return 'μS/cm';
+                case 'ph': return '';
+                case 'nitrogen':
+                case 'phosphorus':
+                case 'potassium': return 'mg/kg';
+                case 'salinity': return '‰';
+                case 'tds': return 'mg/L';
+                default: return '';
+            }
+        }
+
+        function calcTemperature(raw) {
+            // 补码处理
+            if (raw > 0x7FFF) raw = raw - 0x10000;
+            return raw / 10.0;
+        }
+
+        function calcByType(t, raw) {
+            switch (t) {
+                case 'temperature': return calcTemperature(raw);
+                case 'humidity': return raw / 10.0;
+                case 'ph': return raw / 10.0;
+                default: return raw;
+            }
+        }
+
+        function sensorTypeName(t) {
+            const map = { temperature: '温度', humidity: '湿度', conductivity: '电导率', ph: 'PH值', nitrogen: '氮含量', phosphorus: '磷含量', potassium: '钾含量', salinity: '盐度', tds: 'TDS', unknown: '未知' };
+            return map[t] || t;
+        }
+
+        // 计算土壤地力综合指数
+        function calculateSoilFertility(registers) {
+            console.log('开始计算地力综合指数，寄存器数据:', registers);
+            
+            // 显示地力评价面板
+            $('#soilFertilityPanel').show();
+            
+            try {
+                // 获取传感器数据（假设寄存器顺序：0:湿度,1:温度,2:电导率,3:PH,4:氮,5:磷,6:钾,7:盐度,8:TDS）
+                const humidity = registers[0] != null ? (registers[0] / 10) : 0;
+                const temperature = registers[1] != null ? calcTemperature(registers[1]) : 0;
+                const conductivity = registers[2] != null ? registers[2] : 0;
+                const ph = registers[3] != null ? (registers[3] / 10) : 0;
+                const nitrogen = registers[4] != null ? registers[4] : 0;
+                const phosphorus = registers[5] != null ? registers[5] : 0;
+                const potassium = registers[6] != null ? registers[6] : 0;
+                const salinity = registers[7] != null ? registers[7] : 0;
+                const tds = registers[8] != null ? registers[8] : 0;
+                
+                // 计算各项指标的隶属度（0-1之间）
+                const organicMatterScore = calculateOrganicMatterScore(humidity, nitrogen);
+                const soilTextureScore = calculateSoilTextureScore(conductivity, tds);
+                const phScore = calculatePhScore(ph);
+                const salinityScore = calculateSalinityScore(salinity);
+                
+                // 计算综合地力指数 P = Σ(Ci × Fi)
+                // 权重分配：有机质等60%，土壤质地30%，PH和盐度10%
+                const fertilityIndex = (organicMatterScore * 0.6) + (soilTextureScore * 0.3) + ((phScore + salinityScore) * 0.05);
+                
+                // 确定地力等级
+                const fertilityLevel = determineFertilityLevel(fertilityIndex);
+                
+                // 更新界面显示
+                updateFertilityDisplay(fertilityIndex, fertilityLevel);
+                
+                console.log('地力计算完成:', {
+                    organicMatterScore,
+                    soilTextureScore,
+                    phScore,
+                    salinityScore,
+                    fertilityIndex,
+                    fertilityLevel
+                });
+                
+            } catch (error) {
+                console.error('地力计算失败:', error);
+                $('#fertilityStatus').html('<span class="badge badge-danger">计算失败</span>');
+            }
+        }
+        
+        // 计算有机质、全氮、微生物碳、根系层深度得分
+        function calculateOrganicMatterScore(humidity, nitrogen) {
+            // 湿度得分（理想范围20-40%）
+            let humidityScore = 0;
+            if (humidity >= 20 && humidity <= 40) {
+                humidityScore = 1.0;
+            } else if (humidity >= 15 && humidity <= 45) {
+                humidityScore = 0.8;
+            } else if (humidity >= 10 && humidity <= 50) {
+                humidityScore = 0.6;
+            } else if (humidity >= 5 && humidity <= 60) {
+                humidityScore = 0.4;
+            } else {
+                humidityScore = 0.2;
+            }
+            
+            // 氮含量得分（理想范围100-300 mg/kg）
+            let nitrogenScore = 0;
+            if (nitrogen >= 100 && nitrogen <= 300) {
+                nitrogenScore = 1.0;
+            } else if (nitrogen >= 80 && nitrogen <= 400) {
+                nitrogenScore = 0.8;
+            } else if (nitrogen >= 60 && nitrogen <= 500) {
+                nitrogenScore = 0.6;
+            } else if (nitrogen >= 40 && nitrogen <= 600) {
+                nitrogenScore = 0.4;
+            } else {
+                nitrogenScore = 0.2;
+            }
+            
+            // 综合得分（取平均值）
+            return (humidityScore + nitrogenScore) / 2;
+        }
+        
+        // 计算土壤紧实度（或容重）、土壤质地得分
+        function calculateSoilTextureScore(conductivity, tds) {
+            // 电导率得分（理想范围200-800 μS/cm）
+            let conductivityScore = 0;
+            if (conductivity >= 200 && conductivity <= 800) {
+                conductivityScore = 1.0;
+            } else if (conductivity >= 150 && conductivity <= 1000) {
+                conductivityScore = 0.8;
+            } else if (conductivity >= 100 && conductivity <= 1200) {
+                conductivityScore = 0.6;
+            } else if (conductivity >= 50 && conductivity <= 1500) {
+                conductivityScore = 0.4;
+            } else {
+                conductivityScore = 0.2;
+            }
+            
+            // TDS得分（理想范围100-500 mg/L）
+            let tdsScore = 0;
+            if (tds >= 100 && tds <= 500) {
+                tdsScore = 1.0;
+            } else if (tds >= 80 && tds <= 600) {
+                tdsScore = 0.8;
+            } else if (tds >= 60 && tds <= 700) {
+                tdsScore = 0.6;
+            } else if (tds >= 40 && tds <= 800) {
+                tdsScore = 0.4;
+            } else {
+                tdsScore = 0.2;
+            }
+            
+            // 综合得分（取平均值）
+            return (conductivityScore + tdsScore) / 2;
+        }
+        
+        // 计算PH值得分
+        function calculatePhScore(ph) {
+            // PH理想范围6.0-7.5
+            if (ph >= 6.0 && ph <= 7.5) {
+                return 1.0;
+            } else if (ph >= 5.5 && ph <= 8.0) {
+                return 0.8;
+            } else if (ph >= 5.0 && ph <= 8.5) {
+                return 0.6;
+            } else if (ph >= 4.5 && ph <= 9.0) {
+                return 0.4;
+            } else {
+                return 0.2;
+            }
+        }
+        
+        // 计算含盐量得分
+        function calculateSalinityScore(salinity) {
+            // 盐度理想范围0-2‰
+            if (salinity >= 0 && salinity <= 2) {
+                return 1.0;
+            } else if (salinity >= 0 && salinity <= 3) {
+                return 0.8;
+            } else if (salinity >= 0 && salinity <= 4) {
+                return 0.6;
+            } else if (salinity >= 0 && salinity <= 5) {
+                return 0.4;
+            } else {
+                return 0.2;
+            }
+        }
+        
+        // 确定地力等级
+        function determineFertilityLevel(fertilityIndex) {
+            if (fertilityIndex > 0.9) {
+                return '一级（高）';
+            } else if (fertilityIndex >= 0.8) {
+                return '二级（较高）';
+            } else if (fertilityIndex >= 0.6) {
+                return '三级（中）';
+            } else if (fertilityIndex >= 0.4) {
+                return '四级（较低）';
+            } else {
+                return '五级（低）';
+            }
+        }
+        
+        // 更新地力评价显示
+        function updateFertilityDisplay(fertilityIndex, fertilityLevel) {
+            $('#fertilityIndex').text(fertilityIndex.toFixed(3));
+            $('#fertilityLevel').text(fertilityLevel);
+            $('#fertilityStatus').html('<span class="badge badge-success">评价完成</span>');
+            $('#fertilityUpdateTime').text(new Date().toLocaleString());
+            
+            // 根据等级设置颜色
+            let levelColor = '#1ab394'; // 默认绿色
+            if (fertilityLevel.includes('一级') || fertilityLevel.includes('二级')) {
+                levelColor = '#1ab394'; // 绿色
+            } else if (fertilityLevel.includes('三级')) {
+                levelColor = '#f0ad4e'; // 橙色
+            } else if (fertilityLevel.includes('四级') || fertilityLevel.includes('五级')) {
+                levelColor = '#d9534f'; // 红色
+            }
+            
+            $('#fertilityLevel').css('color', levelColor);
+        }
+
+        // 检测数据类型
+        function detectDataType(rawData) {
+            if (!rawData) return 'unknown';
+            
+            try {
+                JSON.parse(rawData);
+                return 'json';
+            } catch (e) {
+                // 检查是否为HEX格式
+                if (/^[0-9A-Fa-f\s]+$/.test(rawData.trim())) {
+                    return 'hex';
+                }
+                return 'text';
+            }
+        }
+
+        // 计算数据大小
+        function calculateDataSize(rawData) {
+            if (!rawData) return '0 B';
+            
+            const bytes = new Blob([rawData]).size;
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        // 获取数据类型徽章
+        function getDataTypeBadge(type) {
+            const badges = {
+                'json': '<span class="data-type-badge data-type-json">JSON</span>',
+                'hex': '<span class="data-type-badge data-type-hex">HEX</span>',
+                'text': '<span class="data-type-badge data-type-text">TEXT</span>',
+                'unknown': '<span class="data-type-badge data-type-unknown">UNKNOWN</span>'
+            };
+            return badges[type] || badges['unknown'];
+        }
+
+        // 更新概要视图
+        function updateSummaryView(data) {
+            let content = '<div class="row">';
+            
+            // 基本信息
+            content += '<div class="col-md-6">';
+            content += '<h6>基本信息</h6>';
+            content += '<table class="table table-sm">';
+            content += `<tr><td>设备ID:</td><td>${data.deviceId || '--'}</td></tr>`;
+            content += `<tr><td>数据类型:</td><td>${data.dataType || '--'}</td></tr>`;
+            content += `<tr><td>传感器值:</td><td>${data.sensorValue || '--'} ${data.unit || ''}</td></tr>`;
+            content += `<tr><td>状态码:</td><td>${data.statusCode || '--'}</td></tr>`;
+            content += `<tr><td>消息ID:</td><td>${data.messageId || '--'}</td></tr>`;
+            content += '</table>';
+            content += '</div>';
+            
+            // 解析的数据
+            content += '<div class="col-md-6">';
+            content += '<h6>解析数据</h6>';
+            
+            if (data.rawData) {
+                try {
+                    const parsed = JSON.parse(data.rawData);
+                    content += '<table class="table table-sm">';
+                    Object.keys(parsed).forEach(key => {
+                        if (typeof parsed[key] !== 'object') {
+                            content += `<tr><td>${key}:</td><td>${parsed[key]}</td></tr>`;
+                        }
+                    });
+                    content += '</table>';
+                } catch (e) {
+                    content += '<p class="text-muted">无法解析为JSON格式</p>';
+                }
+            } else {
+                content += '<p class="text-muted">暂无数据</p>';
+            }
+            
+            content += '</div>';
+            content += '</div>';
+            
+            $('#summaryContent').html(content);
+        }
+
+        // 更新JSON视图
+        function updateJsonView(rawData) {
+            const container = $('#jsonViewer');
+            
+            if (!rawData) {
+                container.html('<p class="text-muted">暂无JSON数据</p>');
+                return;
+            }
+            
+            try {
+                const parsed = JSON.parse(rawData);
+                const formatted = formatJson(parsed);
+                container.html(formatted);
+            } catch (e) {
+                container.html('<p class="text-muted">数据不是有效的JSON格式</p>');
+            }
+        }
+
+        // 格式化JSON
+        function formatJson(obj, indent = 0) {
+            const spaces = '  '.repeat(indent);
+            
+            if (typeof obj === 'string') {
+                return `<span class="json-string">"${obj}"</span>`;
+            } else if (typeof obj === 'number') {
+                return `<span class="json-number">${obj}</span>`;
+            } else if (typeof obj === 'boolean') {
+                return `<span class="json-boolean">${obj}</span>`;
+            } else if (obj === null) {
+                return `<span class="json-null">null</span>`;
+            } else if (Array.isArray(obj)) {
+                if (obj.length === 0) return '[]';
+                let result = '[\n';
+                obj.forEach((item, index) => {
+                    result += spaces + '  ' + formatJson(item, indent + 1);
+                    if (index < obj.length - 1) result += ',';
+                    result += '\n';
+                });
+                result += spaces + ']';
+                return result;
+            } else if (typeof obj === 'object') {
+                const keys = Object.keys(obj);
+                if (keys.length === 0) return '{}';
+                let result = '{\n';
+                keys.forEach((key, index) => {
+                    result += spaces + '  ';
+                    result += `<span class="json-key">"${key}"</span>: `;
+                    result += formatJson(obj[key], indent + 1);
+                    if (index < keys.length - 1) result += ',';
+                    result += '\n';
+                });
+                result += spaces + '}';
+                return result;
+            }
+            
+            return String(obj);
+        }
+
+        // 更新HEX视图
+        function updateHexView(rawData) {
+            const container = $('#hexViewer');
+            
+            if (!rawData) {
+                container.html('<p class="text-muted">暂无HEX数据</p>');
+                return;
+            }
+            
+            // 将字符串转为字节数组
+            const bytes = new TextEncoder().encode(rawData);
+            let hex = '';
+            
+            for (let i = 0; i < bytes.length; i += 16) {
+                // 地址
+                const address = i.toString(16).padStart(8, '0').toUpperCase();
+                hex += `<span class="hex-address">${address}</span>`;
+                
+                // HEX数据
+                let hexPart = '';
+                let asciiPart = '';
+                
+                for (let j = 0; j < 16; j++) {
+                    if (i + j < bytes.length) {
+                        const byte = bytes[i + j];
+                        hexPart += byte.toString(16).padStart(2, '0').toUpperCase() + ' ';
+                        asciiPart += (byte >= 32 && byte <= 126) ? String.fromCharCode(byte) : '.';
+                    } else {
+                        hexPart += '   ';
+                        asciiPart += ' ';
+                    }
+                }
+                
+                hex += `<span class="hex-data">${hexPart}</span>`;
+                hex += `<span class="hex-ascii">${asciiPart}</span>\n`;
+            }
+            
+            container.html(hex);
+        }
+
+        // 更新原始数据视图
+        function updateRawView(rawData) {
+            const container = $('#rawViewer');
+            container.text(rawData || '暂无原始数据');
+        }
+
+        // 更新历史数据表格
+        function updateHistoryTable() {
+            const tbody = $('#dataTableBody');
+            
+            if (historyData.length === 0) {
+                tbody.html('<tr><td colspan="6" class="text-center">暂无历史数据</td></tr>');
+                return;
+            }
+            
+            let html = '';
+            historyData.forEach(function(record) {
+                // 检测数据类型
+                const dataType = detectDataType(record.rawData);
+                const dataSize = calculateDataSize(record.rawData);
+                
+                // 生成数据摘要
+                let summary = '';
+                if (record.rawData) {
+                    try {
+                        const parsed = JSON.parse(record.rawData);
+                        const keys = Object.keys(parsed);
+                        summary = keys.length > 0 ? `包含字段: ${keys.slice(0, 3).join(', ')}${keys.length > 3 ? '...' : ''}` : 'JSON对象';
+                    } catch (e) {
+                        summary = record.rawData.length > 30 ? record.rawData.substring(0, 30) + '...' : record.rawData;
+                    }
+                } else {
+                    summary = '--';
+                }
+                
+                // 时间格式化
+                const time = record.createTime || '--';
+                const status = record.statusCode ? `状态: ${record.statusCode}` : 'OK';
+                
+                html += `<tr>
+                    <td>${time}</td>
+                    <td>${record.deviceId || '--'}</td>
+                    <td>${getDataTypeBadge(dataType)}</td>
+                    <td title="${record.rawData || ''}">${summary}</td>
+                    <td>${dataSize}</td>
+                    <td>${status}</td>
+                </tr>`;
+            });
+            
+            tbody.html(html);
+        }
+
+        // 清空数据显示
+        function clearDataDisplay() {
+            $('#deviceName').text('--');
+            $('#deviceType').text('--');
+            $('#deviceId').text('--');
+            $('#updateTime').text('--');
+            $('#dataTypeValue').html('--');
+            $('#dataSizeValue').text('--');
+            $('#timestampValue').text('--');
+            $('#statusValue').text('--');
+            
+            $('#summaryContent').html('<p class="text-muted text-center">请选择设备并获取数据</p>');
+            $('#jsonViewer').html('<p class="text-muted">暂无JSON数据</p>');
+            $('#hexViewer').html('<p class="text-muted">暂无HEX数据</p>');
+            $('#rawViewer').text('暂无原始数据');
+            
+            // 隐藏传感器面板和地力评价面板
+            $('#sensorPanels').hide();
+            $('#soilFertilityPanel').hide();
+            
+            historyData = [];
+            updateHistoryTable();
+        }
+
+        // 页面卸载时清理定时器
+        $(window).on('beforeunload', function() {
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>API直接测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        button {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 6px;
+            overflow: auto;
+        }
+        .success {
+            color: #52c41a;
+        }
+        .error {
+            color: #f5222d;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 RuoYi 移动端 API 测试</h1>
+    
+    <h2>测试API接口</h2>
+    <button onclick="testStatisticsAPI()">测试设备统计API</button>
+    <button onclick="testDevicesAPI()">测试设备列表API</button>
+    <button onclick="testVegetationAPI()">测试植被统计API</button>
+    <button onclick="clearResult()">清除结果</button>
+    
+    <h2>结果</h2>
+    <pre id="result">点击按钮开始测试...</pre>
+    
+    <script>
+        function clearResult() {
+            document.getElementById('result').textContent = '已清除';
+        }
+        
+        async function testStatisticsAPI() {
+            showResult('⏳ 正在测试设备统计API...\n');
+            
+            try {
+                const response = await fetch('/mobile/api/iot/devices/statistics', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                let result = '=== 设备统计API测试结果 ===\n\n';
+                result += 'HTTP Status: ' + response.status + '\n';
+                result += 'Response Code: ' + data.code + '\n';
+                result += 'Response Code Type: ' + (typeof data.code) + '\n';
+                result += 'Code === 200: ' + (data.code === 200) + '\n';
+                result += 'Message: ' + data.msg + '\n';
+                result += 'Total Devices: ' + (data.total || 0) + '\n';
+                result += 'Online Devices: ' + (data.online || 0) + '\n';
+                result += 'Offline Devices: ' + (data.offline || 0) + '\n\n';
+                result += 'Full Response:\n' + JSON.stringify(data, null, 2);
+                
+                showResult(result, response.status === 200);
+                
+                console.log('=== Console Log ===');
+                console.log('Response:', data);
+                console.log('data.code:', data.code);
+                console.log('data.code === 200:', data.code === 200);
+                
+            } catch (error) {
+                showResult('❌ 测试失败:\n' + error.message + '\n' + error.stack, false);
+            }
+        }
+        
+        async function testDevicesAPI() {
+            showResult('⏳ 正在测试设备列表API...\n');
+            
+            try {
+                const response = await fetch('/mobile/api/iot/devices?pageNum=1&pageSize=10', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                let result = '=== 设备列表API测试结果 ===\n\n';
+                result += 'HTTP Status: ' + response.status + '\n';
+                result += 'Response Code: ' + data.code + '\n';
+                result += 'Message: ' + data.msg + '\n';
+                result += 'Total: ' + (data.total || 0) + '\n';
+                result += 'Rows Count: ' + (data.rows ? data.rows.length : 0) + '\n\n';
+                
+                if (data.rows && data.rows.length > 0) {
+                    result += 'First Device:\n' + JSON.stringify(data.rows[0], null, 2) + '\n\n';
+                }
+                
+                result += 'Full Response:\n' + JSON.stringify(data, null, 2);
+                
+                showResult(result, response.status === 200);
+                console.log('Device List Response:', data);
+                
+            } catch (error) {
+                showResult('❌ 测试失败:\n' + error.message, false);
+            }
+        }
+        
+        async function testVegetationAPI() {
+            showResult('⏳ 正在测试植被统计API...\n');
+            
+            try {
+                const response = await fetch('/mobile/api/vegetation/statistics', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                let result = '=== 植被统计API测试结果 ===\n\n';
+                result += 'HTTP Status: ' + response.status + '\n';
+                result += 'Response Code: ' + data.code + '\n';
+                result += 'Message: ' + data.msg + '\n\n';
+                result += 'Full Response:\n' + JSON.stringify(data, null, 2);
+                
+                showResult(result, response.status === 200);
+                console.log('Vegetation Stats Response:', data);
+                
+            } catch (error) {
+                showResult('❌ 测试失败:\n' + error.message, false);
+            }
+        }
+        
+        function showResult(text, isSuccess) {
+            const element = document.getElementById('result');
+            element.textContent = text;
+            if (isSuccess !== undefined) {
+                element.className = isSuccess ? 'success' : 'error';
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

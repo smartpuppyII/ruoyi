@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.IotDeviceMapper">
+    
+    <resultMap type="IotDevice" id="IotDeviceResult">
+        <result property="deviceId"          column="device_id"          />
+        <result property="deviceName"        column="device_name"        />
+        <result property="deviceType"        column="device_type"        />
+        <result property="mqttPubTopic"      column="mqtt_pub_topic"     />
+        <result property="mqttSubTopic"      column="mqtt_sub_topic"     />
+        <result property="mqttBroker"        column="mqtt_broker"        />
+        <result property="status"            column="status"             />
+        <result property="ipAddress"         column="ip_address"         />
+        <result property="lastCommunication" column="last_communication" />
+        <result property="signalStrength"    column="signal_strength"    />
+        <result property="createTime"        column="create_time"        />
+        <result property="updateTime"        column="update_time"        />
+        <result property="remark"            column="remark"             />
+    </resultMap>
+
+    <sql id="selectIotDeviceVo">
+        select device_id, device_name, device_type, 
+               mqtt_pub_topic, mqtt_sub_topic, mqtt_broker, 
+               status, ip_address, last_communication, signal_strength,
+               create_time, update_time, remark 
+        from iot_device
+    </sql>
+
+    <select id="selectIotDeviceList" parameterType="IotDevice" resultMap="IotDeviceResult">
+        <include refid="selectIotDeviceVo"/>
+        <where>  
+            <if test="deviceName != null  and deviceName != ''"> and device_name like concat('%', #{deviceName}, '%')</if>
+            <if test="deviceType != null  and deviceType != ''"> and device_type = #{deviceType}</if>
+            <if test="status != null  and status != ''"> and status = #{status}</if>
+        </where>
+        order by create_time desc
+    </select>
+    
+    <select id="selectIotDeviceByDeviceId" parameterType="Long" resultMap="IotDeviceResult">
+        <include refid="selectIotDeviceVo"/>
+        where device_id = #{deviceId}
+    </select>
+        
+    <insert id="insertIotDevice" parameterType="IotDevice" useGeneratedKeys="true" keyProperty="deviceId">
+        insert into iot_device
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="deviceName != null">device_name,</if>
+            <if test="deviceType != null">device_type,</if>
+            <if test="mqttPubTopic != null">mqtt_pub_topic,</if>
+            <if test="mqttSubTopic != null">mqtt_sub_topic,</if>
+            <if test="mqttBroker != null">mqtt_broker,</if>
+            <if test="status != null">status,</if>
+            <if test="ipAddress != null">ip_address,</if>
+            <if test="lastCommunication != null">last_communication,</if>
+            <if test="signalStrength != null">signal_strength,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="deviceName != null">#{deviceName},</if>
+            <if test="deviceType != null">#{deviceType},</if>
+            <if test="mqttPubTopic != null">#{mqttPubTopic},</if>
+            <if test="mqttSubTopic != null">#{mqttSubTopic},</if>
+            <if test="mqttBroker != null">#{mqttBroker},</if>
+            <if test="status != null">#{status},</if>
+            <if test="ipAddress != null">#{ipAddress},</if>
+            <if test="lastCommunication != null">#{lastCommunication},</if>
+            <if test="signalStrength != null">#{signalStrength},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateIotDevice" parameterType="IotDevice">
+        update iot_device
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="deviceName != null">device_name = #{deviceName},</if>
+            <if test="deviceType != null">device_type = #{deviceType},</if>
+            <if test="mqttPubTopic != null">mqtt_pub_topic = #{mqttPubTopic},</if>
+            <if test="mqttSubTopic != null">mqtt_sub_topic = #{mqttSubTopic},</if>
+            <if test="mqttBroker != null">mqtt_broker = #{mqttBroker},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="ipAddress != null">ip_address = #{ipAddress},</if>
+            <if test="lastCommunication != null">last_communication = #{lastCommunication},</if>
+            <if test="signalStrength != null">signal_strength = #{signalStrength},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where device_id = #{deviceId}
+    </update>
+
+    <delete id="deleteIotDeviceByDeviceId" parameterType="Long">
+        delete from iot_device where device_id = #{deviceId}
+    </delete>
+
+    <delete id="deleteIotDeviceByDeviceIds" parameterType="String">
+        delete from iot_device where device_id in 
+        <foreach item="deviceId" collection="array" open="(" separator="," close=")">
+            #{deviceId}
+        </foreach>
+    </delete>
+</mapper>

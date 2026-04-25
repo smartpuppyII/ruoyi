@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>植被分析JavaScript错误修复测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 3px; }
+        .test-data { background: #e9ecef; padding: 10px; margin: 10px 0; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 植被分析JavaScript错误修复测试</h1>
+    
+    <div class="test-section">
+        <h3>1. 测试formatter函数</h3>
+        <p>测试修复后的coverageRate formatter函数是否能正确处理各种数据类型：</p>
+        
+        <div class="test-data">
+            <strong>测试数据：</strong><br>
+            - 数字: 75.50<br>
+            - 字符串: "82.30"<br>
+            - null值: null<br>
+            - undefined: undefined<br>
+            - 空字符串: ""<br>
+            - 无效字符串: "abc"
+        </div>
+        
+        <button onclick="testFormatter()">测试formatter函数</button>
+        <div id="formatterTest" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. 测试API数据</h3>
+        <button onclick="testApiData()">测试API返回的数据格式</button>
+        <div id="apiTest" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. 访问修复后的页面</h3>
+        <p>
+            <a href="http://localhost:8080/system/vegetation" target="_blank">🌱 访问植被分析页面</a>
+        </p>
+        <p><strong>说明：</strong>如果页面不再出现JavaScript错误，说明修复成功。</p>
+    </div>
+
+    <script>
+        // 修复后的formatter函数
+        function fixedFormatter(value, row, index) {
+            if (value === null || value === undefined || value === '') {
+                return '0.00%';
+            }
+            var numValue = parseFloat(value);
+            if (isNaN(numValue)) {
+                return '0.00%';
+            }
+            return numValue.toFixed(2) + '%';
+        }
+
+        // 原来的formatter函数（有问题的）
+        function originalFormatter(value, row, index) {
+            return value ? value.toFixed(2) + '%' : '0.00%';
+        }
+
+        function testFormatter() {
+            const resultDiv = document.getElementById('formatterTest');
+            const testCases = [
+                { value: 75.50, description: '数字: 75.50' },
+                { value: "82.30", description: '字符串: "82.30"' },
+                { value: null, description: 'null值: null' },
+                { value: undefined, description: 'undefined: undefined' },
+                { value: "", description: '空字符串: ""' },
+                { value: "abc", description: '无效字符串: "abc"' }
+            ];
+
+            let results = '<h4>测试结果：</h4>';
+            
+            testCases.forEach(testCase => {
+                try {
+                    const originalResult = originalFormatter(testCase.value);
+                    results += `<div><strong>${testCase.description}</strong><br>`;
+                    results += `原函数: <span class="success">${originalResult}</span><br>`;
+                } catch (error) {
+                    results += `<div><strong>${testCase.description}</strong><br>`;
+                    results += `原函数: <span class="error">错误: ${error.message}</span><br>`;
+                }
+                
+                try {
+                    const fixedResult = fixedFormatter(testCase.value);
+                    results += `修复后: <span class="success">${fixedResult}</span></div><br>`;
+                } catch (error) {
+                    results += `修复后: <span class="error">错误: ${error.message}</span></div><br>`;
+                }
+            });
+
+            resultDiv.innerHTML = results;
+        }
+
+        async function testApiData() {
+            const resultDiv = document.getElementById('apiTest');
+            resultDiv.innerHTML = '<span class="info">正在测试API数据...</span>';
+            
+            try {
+                const response = await fetch('http://localhost:8080/system/vegetation/list', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'pageNum=1&pageSize=10'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    let result = '<span class="success">✅ API调用成功！</span><br><br>';
+                    result += '<strong>返回的数据结构：</strong><br>';
+                    result += `<pre>${JSON.stringify(data, null, 2)}</pre><br>`;
+                    
+                    if (data.rows && data.rows.length > 0) {
+                        result += '<strong>coverageRate字段类型检查：</strong><br>';
+                        data.rows.forEach((row, index) => {
+                            result += `记录${index + 1}: coverageRate = ${row.coverageRate} (类型: ${typeof row.coverageRate})<br>`;
+                        });
+                    }
+                    
+                    resultDiv.innerHTML = result;
+                } else {
+                    resultDiv.innerHTML = '<span class="error">❌ API调用失败: ' + response.status + '</span>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = '<span class="error">❌ API调用异常: ' + error.message + '</span>';
+            }
+        }
+
+        // 页面加载时自动测试formatter
+        window.onload = function() {
+            testFormatter();
+        };
+    </script>
+</body>
+</html>
+
+

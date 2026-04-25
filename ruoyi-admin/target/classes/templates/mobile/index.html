@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>首页 - RuoYi移动端</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 移动端样式 -->
+    <link th:href="@{/mobile/css/mobile.css}" rel="stylesheet"/>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <header class="mobile-header">
+        <div class="header-left"></div>
+        <div class="header-title">RuoYi IoT</div>
+        <div class="header-right">
+            <i class="header-action fas fa-bell"></i>
+        </div>
+    </header>
+    
+    <!-- 内容区域 -->
+    <main class="mobile-content">
+        <div class="container">
+            <!-- 欢迎卡片 -->
+            <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <h3 style="margin-bottom: 10px;">
+                    <i class="fas fa-hand-sparkles"></i>
+                    你好，<span id="userName">用户</span>
+                </h3>
+                <p style="opacity: 0.9; font-size: 14px;">欢迎使用智慧农业管理系统</p>
+            </div>
+            
+            <!-- 统计数据 -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <i class="fas fa-microchip" style="font-size: 24px;"></i>
+                    <div class="stat-value" id="totalDevices">0</div>
+                    <div class="stat-label">设备总数</div>
+                </div>
+                
+                <div class="stat-card success">
+                    <i class="fas fa-check-circle" style="font-size: 24px;"></i>
+                    <div class="stat-value" id="onlineDevices">0</div>
+                    <div class="stat-label">在线设备</div>
+                </div>
+                
+                <div class="stat-card warning">
+                    <i class="fas fa-exclamation-triangle" style="font-size: 24px;"></i>
+                    <div class="stat-value" id="offlineDevices">0</div>
+                    <div class="stat-label">离线设备</div>
+                </div>
+                
+                <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <i class="fas fa-leaf" style="font-size: 24px;"></i>
+                    <div class="stat-value" id="analysisCount">0</div>
+                    <div class="stat-label">分析记录</div>
+                </div>
+            </div>
+            
+            <!-- 快捷功能 -->
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-bolt"></i> 快捷功能
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; text-align: center;">
+                    <a href="/m/device/list" style="text-decoration: none; color: inherit;">
+                        <div class="touchable" style="flex-direction: column;">
+                            <i class="fas fa-list" style="font-size: 24px; color: #007aff; margin-bottom: 8px;"></i>
+                            <span style="font-size: 13px;">设备列表</span>
+                        </div>
+                    </a>
+                    
+                    <a href="/m/vegetation/analyze" style="text-decoration: none; color: inherit;">
+                        <div class="touchable" style="flex-direction: column;">
+                            <i class="fas fa-camera" style="font-size: 24px; color: #52c41a; margin-bottom: 8px;"></i>
+                            <span style="font-size: 13px;">拍照分析</span>
+                        </div>
+                    </a>
+                    
+                    <a href="/m/vegetation/list" style="text-decoration: none; color: inherit;">
+                        <div class="touchable" style="flex-direction: column;">
+                            <i class="fas fa-chart-line" style="font-size: 24px; color: #faad14; margin-bottom: 8px;"></i>
+                            <span style="font-size: 13px;">分析记录</span>
+                        </div>
+                    </a>
+                    
+                    <a href="/m/profile" style="text-decoration: none; color: inherit;">
+                        <div class="touchable" style="flex-direction: column;">
+                            <i class="fas fa-cog" style="font-size: 24px; color: #666; margin-bottom: 8px;"></i>
+                            <span style="font-size: 13px;">设置</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- 最近设备 -->
+            <div class="card">
+                <div class="card-title">
+                    <div>
+                        <i class="fas fa-microchip"></i> 最近设备
+                    </div>
+                    <a href="/m/device/list" style="font-size: 13px; color: #007aff; text-decoration: none;">
+                        查看全部 <i class="fas fa-chevron-right"></i>
+                    </a>
+                </div>
+                <div id="recentDevices">
+                    <div class="empty-state" style="padding: 30px 20px;">
+                        <i class="fas fa-microchip empty-icon"></i>
+                        <p class="empty-text">暂无设备数据</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 最近分析 -->
+            <div class="card">
+                <div class="card-title">
+                    <div>
+                        <i class="fas fa-leaf"></i> 最近分析
+                    </div>
+                    <a href="/m/vegetation/list" style="font-size: 13px; color: #007aff; text-decoration: none;">
+                        查看全部 <i class="fas fa-chevron-right"></i>
+                    </a>
+                </div>
+                <div id="recentAnalysis">
+                    <div class="empty-state" style="padding: 30px 20px;">
+                        <i class="fas fa-leaf empty-icon"></i>
+                        <p class="empty-text">暂无分析记录</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- 底部导航 -->
+    <nav class="mobile-footer">
+        <a class="footer-item active" href="/m/index">
+            <i class="footer-icon fas fa-home"></i>
+            <span>首页</span>
+        </a>
+        <a class="footer-item" href="/m/device/list">
+            <i class="footer-icon fas fa-microchip"></i>
+            <span>设备</span>
+        </a>
+        <a class="footer-item" href="/m/vegetation/list">
+            <i class="footer-icon fas fa-leaf"></i>
+            <span>植被</span>
+        </a>
+        <a class="footer-item" href="/m/profile">
+            <i class="footer-icon fas fa-user"></i>
+            <span>我的</span>
+        </a>
+    </nav>
+    
+    <!-- jQuery -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    
+    <!-- 移动端JS -->
+    <script th:src="@{/mobile/js/mobile.js}"></script>
+    
+    <script>
+    $(function() {
+        // 检查登录
+        if (!checkLogin()) return;
+        
+        // 显示用户名
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (user.userName || user.loginName) {
+            $('#userName').text(user.userName || user.loginName);
+        }
+        
+        // 加载统计数据
+        loadStatistics();
+        
+        // 加载最近设备
+        loadRecentDevices();
+        
+        // 加载最近分析
+        loadRecentAnalysis();
+    });
+    
+    // 加载统计数据
+    async function loadStatistics() {
+        try {
+            // 加载设备统计
+            const deviceStats = await API.getDeviceStatistics();
+            if (deviceStats && (deviceStats.code === 0 || deviceStats.code === 200)) {
+                $('#totalDevices').text(deviceStats.total || 0);
+                $('#onlineDevices').text(deviceStats.online || 0);
+                $('#offlineDevices').text(deviceStats.offline || 0);
+            }
+            
+            // 加载植被分析统计
+            const vegStats = await API.getVegetationStatistics();
+            if (vegStats && (vegStats.code === 0 || vegStats.code === 200)) {
+                $('#analysisCount').text(vegStats.total || 0);
+            }
+        } catch (error) {
+            console.error('Load statistics error:', error);
+        }
+    }
+    
+    // 加载最近设备
+    async function loadRecentDevices() {
+        try {
+            const result = await API.getDevices({ pageNum: 1, pageSize: 3 });
+            
+            if (result && (result.code === 0 || result.code === 200) && result.rows && result.rows.length > 0) {
+                const html = result.rows.map(device => `
+                    <a href="/m/device/detail?id=${device.deviceId}" class="list-item">
+                        <div class="list-icon">
+                            <i class="fas fa-microchip" style="color: #007aff;"></i>
+                        </div>
+                        <div class="list-content">
+                            <div class="list-title">${device.deviceName || '未命名设备'}</div>
+                            <div class="list-desc">${device.location || '位置未知'}</div>
+                        </div>
+                        <span class="badge ${device.status == '1' ? 'badge-success' : 'badge-danger'}">
+                            ${device.status == '1' ? '在线' : '离线'}
+                        </span>
+                    </a>
+                `).join('');
+                
+                $('#recentDevices').html(html);
+            }
+        } catch (error) {
+            console.error('Load recent devices error:', error);
+        }
+    }
+    
+    // 加载最近分析
+    async function loadRecentAnalysis() {
+        try {
+            const result = await API.getVegetationList({ pageNum: 1, pageSize: 3 });
+            
+            if (result && (result.code === 0 || result.code === 200) && result.rows && result.rows.length > 0) {
+                const html = result.rows.map(item => `
+                    <div class="list-item">
+                        <div class="list-icon" style="background: linear-gradient(135deg, #52c41a, #7dd956);">
+                            <i class="fas fa-leaf" style="color: white;"></i>
+                        </div>
+                        <div class="list-content">
+                            <div class="list-title">覆盖率: ${item.coverageRate ? item.coverageRate.toFixed(2) + '%' : '-'}</div>
+                            <div class="list-desc">${formatDate(item.analysisTime) || '时间未知'}</div>
+                        </div>
+                        <span class="badge badge-success">已完成</span>
+                    </div>
+                `).join('');
+                
+                $('#recentAnalysis').html(html);
+            }
+        } catch (error) {
+            console.error('Load recent analysis error:', error);
+        }
+    }
+    </script>
+</body>
+</html>
+
+
+

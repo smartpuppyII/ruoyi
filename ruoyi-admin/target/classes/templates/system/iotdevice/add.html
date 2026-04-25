@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="include :: header('新增物联网设备')" />
+</head>
+<body class="white-bg">
+    <div class="wrapper wrapper-content animated fadeInRight ibox-content">
+        <form class="form-horizontal m" id="form-iotdevice-add">
+            <div class="form-group">
+                <label class="col-sm-3 control-label is-required">设备名称：</label>
+                <div class="col-sm-8">
+                    <input name="deviceName" class="form-control" type="text" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label is-required">设备类型：</label>
+                <div class="col-sm-8">
+                    <select name="deviceType" class="form-control" required>
+                        <option value="">请选择</option>
+                        <option value="temperature">温度传感器</option>
+                        <option value="humidity">湿度传感器</option>
+                        <option value="pressure">压力传感器</option>
+                        <option value="modbus">Modbus设备</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label is-required">MQTT Broker：</label>
+                <div class="col-sm-8">
+                    <input name="mqttBroker" class="form-control" type="text" value="broker.emqx.io" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label is-required">发布主题：</label>
+                <div class="col-sm-8">
+                    <input name="mqttPubTopic" class="form-control" type="text" value="GE_pub" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label is-required">订阅主题：</label>
+                <div class="col-sm-8">
+                    <input name="mqttSubTopic" class="form-control" type="text" value="GE_sub" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">设备IP：</label>
+                <div class="col-sm-8">
+                    <input name="ipAddress" class="form-control" type="text" placeholder="192.168.1.100">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">设备状态：</label>
+                <div class="col-sm-8">
+                    <div class="radio-box">
+                        <input type="radio" name="status" value="0" checked>
+                        <label>正常</label>
+                    </div>
+                    <div class="radio-box">
+                        <input type="radio" name="status" value="1">
+                        <label>停用</label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-3 control-label">备注：</label>
+                <div class="col-sm-8">
+                    <textarea name="remark" class="form-control"></textarea>
+                </div>
+            </div>
+        </form>
+    </div>
+    <th:block th:include="include :: footer" />
+    <script type="text/javascript">
+        var prefix = ctx + "system/iotdevice";
+
+        $("#form-iotdevice-add").validate({
+            focusCleanup: true
+        });
+
+        function submitHandler() {
+            if ($.validate.form()) {
+                $.operate.save(prefix + "/add", $('#form-iotdevice-add').serialize());
+            }
+        }
+    </script>
+</body>
+</html>

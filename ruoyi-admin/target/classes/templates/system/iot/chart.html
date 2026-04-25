@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>物联网波形显示</title>
+    <script src="/js/chart.umd.min.js"></script>
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/ajax/libs/layer/layer.min.js?v=3.7.0"></script>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/style.min.css">
+    <link rel="stylesheet" href="/ruoyi/css/ry-ui.css">
+    <script>
+        // 确保Chart.js加载完成
+        window.addEventListener('load', function() {
+            if (typeof Chart === 'undefined') {
+                console.error('Chart.js not loaded');
+                // 尝试重新加载Chart.js
+                var script = document.createElement('script');
+                script.src = '/js/chart.umd.min.js';
+                script.onload = function() {
+                    console.log('Chart.js loaded successfully');
+                    initChart();
+                };
+                document.head.appendChild(script);
+            } else {
+                console.log('Chart.js already loaded');
+                initChart();
+            }
+        });
+    </script>
+    
+    <style>
+        .chart-container {
+            background: #fff;
+            border: 1px solid #e7eaec;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .device-selector {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+        .chart-controls {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .sensor-selector {
+            margin-bottom: 15px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-online {
+            background-color: #5cb85c;
+            animation: pulse 2s infinite;
+        }
+        .status-offline {
+            background-color: #d9534f;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .legend-item {
+            display: inline-block;
+            margin-right: 20px;
+            margin-bottom: 10px;
+        }
+        .legend-color {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            margin-right: 5px;
+        }
+
+    </style>
+</head>
+
+<body class="gray-bg">
+    <div class="wrapper wrapper-content animated fadeInRight">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="ibox">
+                    <div class="ibox-content">
+
+
+                        <!-- 设备选择器 -->
+                        <div class="device-selector">
+                            <label for="deviceSelect">选择设备：</label>
+                            <select id="deviceSelect" class="form-control" style="width: 200px; display: inline-block;">
+                                <option value="">请选择设备</option>
+                            </select>
+                            <button type="button" class="btn btn-primary" onclick="refreshDevices()">
+                                <i class="fa fa-refresh"></i> 刷新设备
+                            </button>
+                            <span class="connection-status" style="margin-left: 20px;">
+                                <span class="status-indicator status-online" id="connectionStatus"></span>
+                                <span id="connectionText">已连接</span>
+                            </span>
+                        </div>
+
+                        <!-- 图表控制面板 -->
+                        <div class="chart-controls">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="sensor-selector">
+                                        <label>显示传感器：</label>
+                                        <div>
+                                            <label class="checkbox-inline">
+                                                <input type="checkbox" id="showTemperature" checked> 温度
+                                            </label>
+                                            <label class="checkbox-inline">
+                                                <input type="checkbox" id="showHumidity" checked> 湿度
+                                            </label>
+                                        </div>
+                                        <div>
+                                            <label class="checkbox-inline">
+                                                <input type="checkbox" id="showConductivity"> 电导率
+                                            </label>
+                                            <label class="checkbox-inline">
+                                                <input type="checkbox" id="showPH"> PH值
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <label>时间范围：</label>
+                                    <select id="timeRange" class="form-control">
+                                        <option value="10">最近10分钟</option>
+                                        <option value="30" selected>最近30分钟</option>
+                                        <option value="60">最近1小时</option>
+                                        <option value="240">最近4小时</option>
+                                        <option value="1440">最近24小时</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label>更新频率：</label>
+                                    <select id="updateInterval" class="form-control">
+                                        <option value="1000">1秒</option>
+                                        <option value="5000" selected>5秒</option>
+                                        <option value="10000">10秒</option>
+                                        <option value="30000">30秒</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label>&nbsp;</label><br>
+                                    <button type="button" class="btn btn-success" id="toggleAutoRefresh">
+                                        <i class="fa fa-play"></i> 开始自动刷新
+                                    </button>
+                                    <button type="button" class="btn btn-info" onclick="exportChart()">
+                                        <i class="fa fa-download"></i> 导出图表
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 图表容器 -->
+                        <div class="chart-container">
+                            <h4><i class="fa fa-line-chart"></i> 传感器数据波形图</h4>
+                            <div class="chart-wrapper">
+                                <canvas id="sensorChart"></canvas>
+                            </div>
+                            <div class="text-center">
+                                <div class="legend-item">
+                                    <span class="legend-color" style="background-color: #FF6384;"></span>
+                                    <span>温度 (°C)</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-color" style="background-color: #36A2EB;"></span>
+                                    <span>湿度 (%)</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-color" style="background-color: #FFCE56;"></span>
+                                    <span>电导率 (μS/cm)</span>
+                                </div>
+                                <div class="legend-item">
+                                    <span class="legend-color" style="background-color: #4BC0C0;"></span>
+                                    <span>PH值</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 实时数据显示 -->
+                        <div class="chart-container">
+                            <h4><i class="fa fa-tachometer"></i> 实时数据</h4>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h5>温度</h5>
+                                        <h3 id="currentTemp" style="color: #FF6384;">--</h3>
+                                        <small>°C</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h5>湿度</h5>
+                                        <h3 id="currentHumidity" style="color: #36A2EB;">--</h3>
+                                        <small>%</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h5>电导率</h5>
+                                        <h3 id="currentConductivity" style="color: #FFCE56;">--</h3>
+                                        <small>μS/cm</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="text-center">
+                                        <h5>PH值</h5>
+                                        <h3 id="currentPH" style="color: #4BC0C0;">--</h3>
+                                        <small></small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-center" style="margin-top: 15px;">
+                                <small class="text-muted">最后更新: <span id="lastUpdate">--</span></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 定义上下文路径 - 修复Thymeleaf语法
+        var ctx = '/';
+        
+        // 全局变量
+        let sensorChart = null;
+        let selectedDeviceId = null;
+        let autoRefreshTimer = null;
+        let autoRefreshEnabled = false;
+        let chartData = {
+            labels: [],
+            temperature: [],
+            humidity: [],
+            conductivity: [],
+            ph: []
+        };
+
+
+
+        // 页面初始化
+        $(document).ready(function() {
+            console.log('波形显示页面初始化...');
+            console.log('Chart.js版本: ' + (typeof Chart !== 'undefined' ? Chart.version || '未知' : '未加载'));
+            
+            loadDevices();
+            setupEventHandlers();
+            
+            // 确保Chart.js加载完成后再初始化图表
+            if (typeof Chart !== 'undefined') {
+                console.log('Chart.js已加载，开始初始化图表');
+                initChart();
+            } else {
+                console.log('等待Chart.js加载...');
+                // 等待Chart.js加载
+                var checkChart = setInterval(function() {
+                    if (typeof Chart !== 'undefined') {
+                        clearInterval(checkChart);
+                        console.log('Chart.js加载完成，开始初始化图表');
+                        initChart();
+                    }
+                }, 100);
+            }
+        });
+
+        // 设置事件处理器
+        function setupEventHandlers() {
+            // 设备选择事件
+            $('#deviceSelect').change(function() {
+                selectedDeviceId = $(this).val();
+                console.log('选择设备: ' + selectedDeviceId);
+                if (selectedDeviceId) {
+                    loadChartData();
+                    startAutoRefresh();
+                } else {
+                    stopAutoRefresh();
+                    clearChart();
+                }
+            });
+
+            // 自动刷新切换
+            $('#toggleAutoRefresh').click(function() {
+                if (autoRefreshEnabled) {
+                    stopAutoRefresh();
+                } else {
+                    startAutoRefresh();
+                }
+            });
+
+            // 传感器显示控制
+            $('input[type="checkbox"]').change(function() {
+                updateChartVisibility();
+            });
+
+            // 时间范围变化
+            $('#timeRange').change(function() {
+                if (selectedDeviceId) {
+                    loadChartData();
+                }
+            });
+        }
+
+        // 初始化图表
+        function initChart() {
+            try {
+                // 先销毁现有图表
+                if (sensorChart) {
+                    try {
+                        sensorChart.destroy();
+                        sensorChart = null;
+                        console.log('已销毁现有图表');
+                    } catch (error) {
+                        console.log('销毁图表时出现警告: ' + error.message);
+                    }
+                }
+
+                const chartCtx = document.getElementById('sensorChart');
+                if (!chartCtx) {
+                    console.log('错误: 找不到canvas元素');
+                    return;
+                }
+
+                const ctx = chartCtx.getContext('2d');
+                if (!ctx) {
+                    console.log('错误: 无法获取canvas上下文');
+                    return;
+                }
+
+                console.log('开始创建Chart.js实例...');
+                
+                sensorChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [
+                            {
+                                label: '温度 (°C)',
+                                data: [],
+                                borderColor: '#FF6384',
+                                backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                                borderWidth: 2,
+                                fill: false,
+                                tension: 0.4,
+                                hidden: false
+                            },
+                            {
+                                label: '湿度 (%)',
+                                data: [],
+                                borderColor: '#36A2EB',
+                                backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                                borderWidth: 2,
+                                fill: false,
+                                tension: 0.4,
+                                hidden: false
+                            },
+                            {
+                                label: '电导率 (μS/cm)',
+                                data: [],
+                                borderColor: '#FFCE56',
+                                backgroundColor: 'rgba(255, 206, 86, 0.1)',
+                                borderWidth: 2,
+                                fill: false,
+                                tension: 0.4,
+                                hidden: true
+                            },
+                            {
+                                label: 'PH值',
+                                data: [],
+                                borderColor: '#4BC0C0',
+                                backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                                borderWidth: 2,
+                                fill: false,
+                                tension: 0.4,
+                                hidden: true
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: {
+                            duration: 750,
+                            easing: 'easeInOutQuart'
+                        },
+                        scales: {
+                            x: {
+                                display: true,
+                                title: {
+                                    display: true,
+                                    text: '时间'
+                                },
+                                grid: {
+                                    display: true
+                                }
+                            },
+                            y: {
+                                display: true,
+                                title: {
+                                    display: true,
+                                    text: '数值'
+                                },
+                                grid: {
+                                    display: true
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                backgroundColor: 'rgba(0,0,0,0.8)',
+                                titleColor: '#fff',
+                                bodyColor: '#fff'
+                            }
+                        },
+                        interaction: {
+                            mode: 'nearest',
+                            axis: 'x',
+                            intersect: false
+                        }
+                    }
+                });
+                
+                console.log('Chart.js实例创建成功');
+            } catch (error) {
+                console.log('创建图表失败: ' + error.message);
+                console.error('图表初始化错误:', error);
+            }
+        }
+
+        // 加载设备列表
+        function loadDevices() {
+            console.log('开始加载设备列表...');
+            $.ajax({
+                url: ctx + 'system/iotdevice/list',
+                type: 'GET',
+                success: function(result) {
+                    console.log('设备列表API响应: ' + JSON.stringify(result));
+                    if (result.code === 0 && result.data) {
+                        const devices = result.data;
+                        const select = $('#deviceSelect');
+                        select.empty();
+                        select.append('<option value="">请选择设备</option>');
+                        
+                        devices.forEach(function(device) {
+                            select.append(`<option value="${device.deviceId}">${device.deviceName} (${device.deviceType})</option>`);
+                        });
+                        
+                        console.log(`成功加载 ${devices.length} 个设备`);
+                    } else {
+                        console.log('设备列表响应异常: ' + result.msg);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.log('加载设备列表失败: ' + error);
+                    console.error('设备列表请求失败:', xhr, status, error);
+                }
+            });
+        }
+
+        // 刷新设备列表
+        function refreshDevices() {
+            loadDevices();
+        }
+
+        // 加载图表数据
+        function loadChartData() {
+            if (!selectedDeviceId) {
+                // 移除所有 updateDebugInfo 的调用
+                return;
+            }
+
+            // 移除所有 updateDebugInfo 的调用
+            $.ajax({
+                url: ctx + 'system/iot/chart/data/' + selectedDeviceId,
+                type: 'GET',
+                success: function(result) {
+                    // 移除所有 updateDebugInfo 的调用
+                    if (result.code === 0 && result.data) {
+                        processChartData(result.data);
+                        updateChart();
+                        updateCurrentValues();
+                        // 移除所有 updateDebugInfo 的调用
+                    } else {
+                        // 移除所有 updateDebugInfo 的调用
+                    }
+                },
+                error: function(xhr, status, error) {
+                    // 移除所有 updateDebugInfo 的调用
+                    console.error('图表数据请求失败:', xhr, status, error);
+                }
+            });
+        }
+
+        // 处理图表数据
+        function processChartData(data) {
+            // 移除所有 updateDebugInfo 的调用
+            
+            chartData = {
+                labels: [],
+                temperature: [],
+                humidity: [],
+                conductivity: [],
+                ph: []
+            };
+
+            if (!Array.isArray(data)) {
+                // 移除所有 updateDebugInfo 的调用
+                return;
+            }
+
+            data.forEach(function(item, index) {
+                // 移除所有 updateDebugInfo 的调用
+                
+                const time = new Date(item.createTime).toLocaleTimeString();
+                chartData.labels.push(time);
+                
+                // 根据数据类型解析传感器值 - 修复数据解析逻辑
+                const sensorType = item.sensorType || item.dataType;
+                const sensorValue = item.sensorValue || item.sensorValueCalculated || 0;
+                
+                // 移除所有 updateDebugInfo 的调用
+                
+                if (sensorType === 'temperature' || sensorType === 'temp') {
+                    chartData.temperature.push(parseFloat(sensorValue) || 0);
+                } else if (sensorType === 'humidity' || sensorType === 'hum') {
+                    chartData.humidity.push(parseFloat(sensorValue) || 0);
+                } else if (sensorType === 'conductivity' || sensorType === 'cond') {
+                    chartData.conductivity.push(parseFloat(sensorValue) || 0);
+                } else if (sensorType === 'ph' || sensorType === 'pH') {
+                    chartData.ph.push(parseFloat(sensorValue) || 0);
+                } else {
+                    // 如果没有明确的传感器类型，尝试根据数据类型推断
+                    // 移除所有 updateDebugInfo 的调用
+                    if (item.dataType === 'temperature' || item.dataType === 'temp') {
+                        chartData.temperature.push(parseFloat(sensorValue) || 0);
+                    } else if (item.dataType === 'humidity' || item.dataType === 'hum') {
+                        chartData.humidity.push(parseFloat(sensorValue) || 0);
+                    } else if (item.dataType === 'conductivity' || item.dataType === 'cond') {
+                        chartData.conductivity.push(parseFloat(sensorValue) || 0);
+                    } else if (item.dataType === 'ph' || item.dataType === 'pH') {
+                        chartData.ph.push(parseFloat(sensorValue) || 0);
+                    }
+                }
+            });
+            
+            // 移除所有 updateDebugInfo 的调用
+        }
+
+        // 更新图表
+        function updateChart() {
+            if (!sensorChart) {
+                // 移除所有 updateDebugInfo 的调用
+                return;
+            }
+
+            try {
+                // 移除所有 updateDebugInfo 的调用
+                
+                sensorChart.data.labels = chartData.labels;
+                sensorChart.data.datasets[0].data = chartData.temperature;
+                sensorChart.data.datasets[1].data = chartData.humidity;
+                sensorChart.data.datasets[2].data = chartData.conductivity;
+                sensorChart.data.datasets[3].data = chartData.ph;
+
+                sensorChart.update('none'); // 使用 'none' 模式避免动画
+                // 移除所有 updateDebugInfo 的调用
+            } catch (error) {
+                // 移除所有 updateDebugInfo 的调用
+                console.error('图表更新错误:', error);
+            }
+        }
+
+        // 更新图表可见性
+        function updateChartVisibility() {
+            if (!sensorChart) return;
+
+            sensorChart.data.datasets[0].hidden = !$('#showTemperature').is(':checked');
+            sensorChart.data.datasets[1].hidden = !$('#showHumidity').is(':checked');
+            sensorChart.data.datasets[2].hidden = !$('#showConductivity').is(':checked');
+            sensorChart.data.datasets[3].hidden = !$('#showPH').is(':checked');
+
+            sensorChart.update();
+        }
+
+        // 更新当前值显示
+        function updateCurrentValues() {
+            if (chartData.temperature.length > 0) {
+                $('#currentTemp').text(chartData.temperature[chartData.temperature.length - 1].toFixed(1));
+            }
+            if (chartData.humidity.length > 0) {
+                $('#currentHumidity').text(chartData.humidity[chartData.humidity.length - 1].toFixed(1));
+            }
+            if (chartData.conductivity.length > 0) {
+                $('#currentConductivity').text(chartData.conductivity[chartData.conductivity.length - 1].toFixed(0));
+            }
+            if (chartData.ph.length > 0) {
+                $('#currentPH').text(chartData.ph[chartData.ph.length - 1].toFixed(1));
+            }
+
+            $('#lastUpdate').text(new Date().toLocaleString());
+        }
+
+        // 启动自动刷新
+        function startAutoRefresh() {
+            if (autoRefreshEnabled) return;
+
+            const interval = parseInt($('#updateInterval').val());
+            autoRefreshTimer = setInterval(function() {
+                if (selectedDeviceId) {
+                    loadChartData();
+                }
+            }, interval);
+
+            autoRefreshEnabled = true;
+            $('#toggleAutoRefresh').html('<i class="fa fa-pause"></i> 停止自动刷新');
+            $('#toggleAutoRefresh').removeClass('btn-success').addClass('btn-warning');
+            // 移除所有 updateDebugInfo 的调用
+        }
+
+        // 停止自动刷新
+        function stopAutoRefresh() {
+            if (autoRefreshTimer) {
+                clearInterval(autoRefreshTimer);
+                autoRefreshTimer = null;
+            }
+
+            autoRefreshEnabled = false;
+            $('#toggleAutoRefresh').html('<i class="fa fa-play"></i> 开始自动刷新');
+            $('#toggleAutoRefresh').removeClass('btn-warning').addClass('btn-success');
+            // 移除所有 updateDebugInfo 的调用
+        }
+
+        // 清空图表
+        function clearChart() {
+            if (sensorChart) {
+                sensorChart.data.labels = [];
+                sensorChart.data.datasets.forEach(function(dataset) {
+                    dataset.data = [];
+                });
+                sensorChart.update();
+            }
+
+            $('#currentTemp').text('--');
+            $('#currentHumidity').text('--');
+            $('#currentConductivity').text('--');
+            $('#currentPH').text('--');
+            $('#lastUpdate').text('--');
+            
+            // 移除所有 updateDebugInfo 的调用
+        }
+
+        // 导出图表
+        function exportChart() {
+            if (sensorChart) {
+                try {
+                    const link = document.createElement('a');
+                    link.download = 'sensor-chart.png';
+                    link.href = sensorChart.toBase64Image();
+                    link.click();
+                    // 移除所有 updateDebugInfo 的调用
+                } catch (error) {
+                    // 移除所有 updateDebugInfo 的调用
+                }
+            }
+        }
+    </script>
+</body>
+</html>

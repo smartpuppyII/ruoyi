@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>植被分析 - RuoYi移动端</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 移动端样式 -->
+    <link th:href="@{/mobile/css/mobile.css}" rel="stylesheet"/>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <header class="mobile-header">
+        <div class="header-left">
+            <i class="back-btn fas fa-arrow-left"></i>
+        </div>
+        <div class="header-title">植被分析</div>
+        <div class="header-right"></div>
+    </header>
+    
+    <!-- 内容区域 -->
+    <main class="mobile-content" style="padding-bottom: 20px;">
+        <div class="container">
+            <!--上传提示 -->
+            <div class="card">
+                <div style="text-align: center; color: #666;">
+                    <i class="fas fa-info-circle" style="color: #007aff;"></i>
+                    拍摄或上传植物照片，系统将自动分析植被覆盖率
+                </div>
+            </div>
+            
+            <!-- 图片上传区域 -->
+            <div class="card">
+                <div id="uploadArea" class="upload-area" onclick="selectUploadMethod()">
+                    <i class="upload-icon fas fa-camera"></i>
+                    <div class="upload-text">点击拍照或选择图片</div>
+                </div>
+                
+                <!-- 图片预览 -->
+                <div id="imagePreview" style="display: none;">
+                    <img id="previewImg" class="image-preview" alt="预览图">
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button class="btn btn-warning" style="flex: 1;" onclick="reselect()">
+                            <i class="fas fa-redo"></i> 重新选择
+                        </button>
+                        <button class="btn btn-success" style="flex: 1;" onclick="startAnalyze()">
+                            <i class="fas fa-chart-line"></i> 开始分析
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 分析结果 -->
+            <div id="resultCard" class="card" style="display: none;">
+                <div class="card-title">
+                    <i class="fas fa-chart-pie"></i> 分析结果
+                </div>
+                <div class="card-content">
+                    <div style="text-align: center; padding: 20px;">
+                        <div style="font-size: 48px; font-weight: bold; color: #52c41a;" id="coverageRate">
+                            0%
+                        </div>
+                        <div style="color: #666; margin-top: 10px;">植被覆盖率</div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 20px;">
+                        <div style="text-align: center; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                            <div style="font-size: 20px; font-weight: bold; color: #52c41a;" id="vegPixels">0</div>
+                            <div style="color: #999; font-size: 13px; margin-top: 5px;">植被像素</div>
+                        </div>
+                        <div style="text-align: center; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                            <div style="font-size: 20px; font-weight: bold; color: #007aff;" id="totalPixels">0</div>
+                            <div style="color: #999; font-size: 13px; margin-top: 5px;">总像素</div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 15px; padding: 15px; background: #e6f7ff; border-radius: 8px; border-left: 3px solid #007aff;">
+                        <div style="color: #666; font-size: 13px;">
+                            <i class="fas fa-lightbulb"></i>
+                            <strong>分析说明:</strong> 系统已自动识别图片中的植被区域并计算覆盖率
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary btn-block mt-15" onclick="continueAnalyze()">
+                        <i class="fas fa-plus"></i> 继续分析
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 最近分析 -->
+            <div class="card">
+                <div class="card-title">
+                    <div>
+                        <i class="fas fa-history"></i> 最近分析
+                    </div>
+                    <a href="/m/vegetation/list" style="font-size: 13px; color: #007aff; text-decoration: none;">
+                        查看全部 <i class="fas fa-chevron-right"></i>
+                    </a>
+                </div>
+                <div id="recentList">
+                    <!-- 动态加载 -->
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- jQuery -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    
+    <!-- 移动端JS -->
+    <script src="/mobile/js/mobile.js"></script>
+    
+    <script>
+    let selectedFile = null;
+    
+    $(function() {
+        // 检查登录
+        if (!checkLogin()) return;
+        
+        // 加载最近分析
+        loadRecentAnalysis();
+    });
+    
+    // 选择上传方式
+    function selectUploadMethod() {
+        if (confirm('拍照还是从相册选择？\n\n确定=拍照    取消=相册')) {
+            // 拍照
+            captureImage(handleImageSelect);
+        } else {
+            // 选择图片
+            selectImage(handleImageSelect);
+        }
+    }
+    
+    // 处理图片选择
+    function handleImageSelect(file) {
+        selectedFile = file;
+        
+        // 显示预览
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            $('#previewImg').attr('src', e.target.result);
+            $('#uploadArea').hide();
+            $('#imagePreview').show();
+        };
+        reader.readAsDataURL(file);
+    }
+    
+    // 重新选择
+    function reselect() {
+        selectedFile = null;
+        $('#uploadArea').show();
+        $('#imagePreview').hide();
+        $('#resultCard').hide();
+    }
+    
+    // 开始分析
+    async function startAnalyze() {
+        if (!selectedFile) {
+            showToast('请先选择图片');
+            return;
+        }
+        
+        showLoading('分析中...');
+        
+        try {
+            const result = await API.analyzeImage(selectedFile);
+            
+            hideLoading();
+            
+            if ((result.code === 0 || result.code === 200) && result.data) {
+                // 显示结果
+                const rate = result.data.coverageRate || 0;
+                const vegPixels = result.data.greenPixelCount || result.data.vegetationPixels || 0;
+                const total = result.data.totalPixelCount || result.data.totalPixels || 0;
+                
+                $('#coverageRate').text(rate.toFixed(2) + '%');
+                $('#vegPixels').text(vegPixels.toLocaleString());
+                $('#totalPixels').text(total.toLocaleString());
+                
+                $('#resultCard').show();
+                
+                // 滚动到结果
+                $('html, body').animate({
+                    scrollTop: $('#resultCard').offset().top - 60
+                }, 500);
+                
+                // 刷新最近分析
+                setTimeout(() => {
+                    loadRecentAnalysis();
+                }, 1000);
+            } else {
+                showToast(result.msg || '分析失败，请重试');
+            }
+        } catch (error) {
+            hideLoading();
+            console.error('Analyze error:', error);
+            showToast('分析失败，请检查网络连接');
+        }
+    }
+    
+    // 继续分析
+    function continueAnalyze() {
+        selectedFile = null;
+        $('#uploadArea').show();
+        $('#imagePreview').hide();
+        $('#resultCard').hide();
+        
+        // 滚动到顶部
+        $('html, body').animate({ scrollTop: 0 }, 500);
+    }
+    
+    // 加载最近分析
+    async function loadRecentAnalysis() {
+        try {
+            const result = await API.getVegetationList({ pageNum: 1, pageSize: 5 });
+            
+            if ((result.code === 0 || result.code === 200) && result.rows && result.rows.length > 0) {
+                const html = result.rows.map(item => `
+                    <div class="list-item">
+                        <div class="list-icon" style="background: linear-gradient(135deg, #52c41a, #7dd956);">
+                            <i class="fas fa-leaf" style="color: white;"></i>
+                        </div>
+                        <div class="list-content">
+                            <div class="list-title">覆盖率: ${item.coverageRate ? item.coverageRate.toFixed(2) + '%' : '-'}</div>
+                            <div class="list-desc">${formatDate(item.analysisTime) || '时间未知'}</div>
+                        </div>
+                        <span class="badge badge-success">已完成</span>
+                    </div>
+                `).join('');
+                
+                $('#recentList').html(html);
+            } else {
+                $('#recentList').html(`
+                    <div class="empty-state" style="padding: 30px 20px;">
+                        <i class="fas fa-leaf empty-icon"></i>
+                        <p class="empty-text">暂无分析记录</p>
+                    </div>
+                `);
+            }
+        } catch (error) {
+            console.error('Load recent analysis error:', error);
+        }
+    }
+    </script>
+</body>
+</html>
+
+
+

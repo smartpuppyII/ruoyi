@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>移动端测试工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #333;
+            border-bottom: 2px solid #007aff;
+            padding-bottom: 10px;
+        }
+        button {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button.danger {
+            background: #f5222d;
+        }
+        button.success {
+            background: #52c41a;
+        }
+        .result {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 15px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .success-msg {
+            color: #52c41a;
+            font-weight: bold;
+        }
+        .error-msg {
+            color: #f5222d;
+            font-weight: bold;
+        }
+        .info {
+            background: #e6f7ff;
+            border-left: 4px solid #1890ff;
+            padding: 12px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔧 RuoYi 移动端测试工具</h1>
+    
+    <div class="card">
+        <h2>1. 清除缓存</h2>
+        <div class="info">
+            ⚠️ 清除缓存会删除所有localStorage数据（包括登录信息）
+        </div>
+        <button class="danger" onclick="clearCache()">清除所有缓存</button>
+        <button onclick="clearJSCache()">仅清除JS缓存</button>
+        <div id="cacheResult" class="result" style="display:none;"></div>
+    </div>
+    
+    <div class="card">
+        <h2>2. 检查登录状态</h2>
+        <button onclick="checkLogin()">检查Token</button>
+        <button class="success" onclick="goToLogin()">前往登录</button>
+        <div id="loginResult" class="result" style="display:none;"></div>
+    </div>
+    
+    <div class="card">
+        <h2>3. 测试API接口</h2>
+        <button onclick="testDevicesAPI()">测试设备列表API</button>
+        <button onclick="testStatisticsAPI()">测试统计API</button>
+        <button onclick="testVegetationAPI()">测试植被API</button>
+        <div id="apiResult" class="result" style="display:none;"></div>
+    </div>
+    
+    <div class="card">
+        <h2>4. 快速访问</h2>
+        <button onclick="goToPage('/m/login')">登录页</button>
+        <button onclick="goToPage('/m/index')">首页</button>
+        <button onclick="goToPage('/m/device/list')">设备列表</button>
+        <button onclick="goToPage('/m/profile')">个人中心</button>
+    </div>
+    
+    <div class="card">
+        <h2>5. JS文件版本检查</h2>
+        <button onclick="checkJSVersion()">检查mobile.js版本</button>
+        <div id="versionResult" class="result" style="display:none;"></div>
+    </div>
+
+    <script>
+        // 清除所有缓存
+        function clearCache() {
+            try {
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // 清除Service Worker缓存
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(registrations => {
+                        registrations.forEach(registration => registration.unregister());
+                    });
+                }
+                
+                // 清除Cache Storage
+                if ('caches' in window) {
+                    caches.keys().then(names => {
+                        names.forEach(name => caches.delete(name));
+                    });
+                }
+                
+                showResult('cacheResult', '✅ 缓存已清除！\n\n请按 Ctrl+Shift+R 强制刷新页面', 'success');
+            } catch (error) {
+                showResult('cacheResult', '❌ 清除失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 清除JS缓存
+        function clearJSCache() {
+            const timestamp = new Date().getTime();
+            const script = document.createElement('script');
+            script.src = '/mobile/js/mobile.js?v=' + timestamp;
+            document.head.appendChild(script);
+            
+            showResult('cacheResult', '✅ JS缓存已清除\n\n新版本加载时间戳: ' + timestamp, 'success');
+        }
+        
+        // 检查登录状态
+        function checkLogin() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            let result = '=== 登录状态检查 ===\n\n';
+            
+            if (token) {
+                result += '✅ Token存在\n';
+                result += 'Token: ' + token.substring(0, 50) + '...\n\n';
+            } else {
+                result += '❌ Token不存在（未登录）\n\n';
+            }
+            
+            if (user) {
+                result += '✅ 用户信息存在\n';
+                result += 'User: ' + user + '\n';
+            } else {
+                result += '❌ 用户信息不存在\n';
+            }
+            
+            showResult('loginResult', result, token ? 'success' : 'error');
+        }
+        
+        // 测试设备列表API
+        async function testDevicesAPI() {
+            showResult('apiResult', '⏳ 正在测试...', 'info');
+            
+            try {
+                const token = localStorage.getItem('token') || '';
+                const response = await fetch('/mobile/api/iot/devices?pageNum=1&pageSize=10', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                
+                const data = await response.json();
+                
+                let result = '=== 设备列表API测试 ===\n\n';
+                result += 'HTTP Status: ' + response.status + '\n';
+                result += 'Response Code: ' + data.code + '\n';
+                result += 'Message: ' + data.msg + '\n';
+                result += 'Total: ' + data.total + '\n';
+                result += 'Rows: ' + (data.rows ? data.rows.length : 0) + '\n\n';
+                result += 'Full Response:\n' + JSON.stringify(data, null, 2);
+                
+                showResult('apiResult', result, data.code === 200 ? 'success' : 'error');
+            } catch (error) {
+                showResult('apiResult', '❌ 测试失败:\n' + error.message, 'error');
+            }
+        }
+        
+        // 测试统计API
+        async function testStatisticsAPI() {
+            showResult('apiResult', '⏳ 正在测试...', 'info');
+            
+            try {
+                const token = localStorage.getItem('token') || '';
+                const response = await fetch('/mobile/api/iot/devices/statistics', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                
+                const data = await response.json();
+                
+                let result = '=== 统计API测试 ===\n\n';
+                result += 'HTTP Status: ' + response.status + '\n';
+                result += 'Response:\n' + JSON.stringify(data, null, 2);
+                
+                showResult('apiResult', result, data.code === 200 ? 'success' : 'error');
+            } catch (error) {
+                showResult('apiResult', '❌ 测试失败:\n' + error.message, 'error');
+            }
+        }
+        
+        // 测试植被API
+        async function testVegetationAPI() {
+            showResult('apiResult', '⏳ 正在测试...', 'info');
+            
+            try {
+                const token = localStorage.getItem('token') || '';
+                const response = await fetch('/mobile/api/vegetation/list?pageNum=1&pageSize=10', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                
+                const data = await response.json();
+                
+                let result = '=== 植被API测试 ===\n\n';
+                result += 'HTTP Status: ' + response.status + '\n';
+                result += 'Response:\n' + JSON.stringify(data, null, 2);
+                
+                showResult('apiResult', result, data.code === 200 ? 'success' : 'error');
+            } catch (error) {
+                showResult('apiResult', '❌ 测试失败:\n' + error.message, 'error');
+            }
+        }
+        
+        // 检查JS版本
+        async function checkJSVersion() {
+            try {
+                const response = await fetch('/mobile/js/mobile.js?t=' + Date.now());
+                const text = await response.text();
+                
+                // 检查是否包含新的日志代码
+                const hasNewLogs = text.includes('API Response Status') && 
+                                   text.includes('API Response Data');
+                
+                let result = '=== mobile.js 版本检查 ===\n\n';
+                result += 'File Size: ' + text.length + ' bytes\n';
+                result += 'Has Debug Logs: ' + (hasNewLogs ? '✅ 是（新版本）' : '❌ 否（旧版本）') + '\n\n';
+                
+                if (!hasNewLogs) {
+                    result += '⚠️ 检测到旧版本！\n';
+                    result += '请按 Ctrl+Shift+R 强制刷新页面\n';
+                    result += '或点击"清除JS缓存"按钮';
+                }
+                
+                showResult('versionResult', result, hasNewLogs ? 'success' : 'error');
+            } catch (error) {
+                showResult('versionResult', '❌ 检查失败:\n' + error.message, 'error');
+            }
+        }
+        
+        // 跳转到页面
+        function goToPage(url) {
+            window.location.href = url;
+        }
+        
+        // 跳转到登录页
+        function goToLogin() {
+            window.location.href = '/m/login';
+        }
+        
+        // 显示结果
+        function showResult(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = 'result ' + (type === 'success' ? 'success-msg' : type === 'error' ? 'error-msg' : '');
+            element.textContent = message;
+        }
+    </script>
+</body>
+</html>
+
+
+
+
+
+

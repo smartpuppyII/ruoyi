@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Modbus数据解析测试</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .test { margin: 20px 0; padding: 15px; background: #f5f5f5; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        pre { background: white; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Modbus数据解析测试工具</h1>
+    
+    <div class="test">
+        <h3>测试数据输入</h3>
+        <textarea id="rawInput" style="width: 100%; height: 100px; font-family: monospace;" 
+                  placeholder="粘贴 iot_data 表中的 rawData 字段内容，例如：010300120012001800190015..."></textarea>
+        <button onclick="testParse()" style="margin-top: 10px; padding: 10px 20px;">解析数据</button>
+    </div>
+
+    <div class="test">
+        <h3>解析结果</h3>
+        <pre id="result">等待输入...</pre>
+    </div>
+
+    <div class="test">
+        <h3>传感器数据</h3>
+        <pre id="sensors">等待解析...</pre>
+    </div>
+
+    <script>
+        // 复制自移动端的解析函数
+        function parseModbusData(rawData) {
+            try {
+                if (!rawData) {
+                    return { error: 'rawData为空' };
+                }
+                
+                console.log('原始数据:', rawData);
+                
+                let hex = rawData.replace(/0x/gi, '').replace(/\s+/g, '').toUpperCase();
+                console.log('处理后hex:', hex);
+                
+                if (!/^[0-9A-F]+$/.test(hex)) {
+                    return { error: '包含非法字符: ' + hex };
+                }
+                
+                if (hex.length < 12) {
+                    return { error: '数据长度不足: ' + hex.length };
+                }
+                
+                const address = parseInt(hex.substr(0, 2), 16);
+                const functionCode = parseInt(hex.substr(2, 2), 16);
+                
+                console.log('地址码:', address);
+                console.log('功能码:', functionCode);
+                
+                if (functionCode === 0x03) {
+                    const byteCount = parseInt(hex.substr(4, 2), 16);
+                    const dataStart = 6;
+                    const dataEnd = dataStart + byteCount * 2;
+                    const dataHex = hex.substring(dataStart, dataEnd);
+                    const registers = [];
+                    
+                    console.log('字节数:', byteCount);
+                    console.log('数据部分:', dataHex);
+                    
+                    for (let i = 0; i + 4 <= dataHex.length; i += 4) {
+                        const regValue = parseInt(dataHex.substr(i, 4), 16);
+                        registers.push(regValue);
+                    }
+                    
+                    return {
+                        success: true,
+                        address,
+                        functionCode,
+                        byteCount,
+                        dataHex,
+                        registers,
+                        registerCount: registers.length
+                    };
+                }
+                
+                return { error: '功能码不是0x03: ' + functionCode.toString(16) };
+                
+            } catch (error) {
+                return { error: error.message };
+            }
+        }
+
+        function testParse() {
+            const rawData = document.getElementById('rawInput').value.trim();
+            const result = parseModbusData(rawData);
+            
+            document.getElementById('result').textContent = JSON.stringify(result, null, 2);
+            
+            if (result.success && result.registers) {
+                const r = result.registers;
+                let sensorText = '寄存器数据 (' + r.length + '个):\n\n';
+                
+                if (r.length >= 9) {
+                    sensorText += '寄存器0 (土壤湿度): ' + r[0] + ' → ' + (r[0] / 10).toFixed(1) + '%\n';
+                    sensorText += '寄存器1 (土壤温度): ' + r[1] + ' → ' + (r[1] / 10).toFixed(1) + '℃\n';
+                    sensorText += '寄存器2 (电导率): ' + r[2] + ' → ' + r[2] + ' μS/cm\n';
+                    sensorText += '寄存器3 (PH值): ' + r[3] + ' → ' + (r[3] / 100).toFixed(2) + '\n';
+                    sensorText += '寄存器4 (氮含量): ' + r[4] + ' → ' + r[4] + ' mg/kg\n';
+                    sensorText += '寄存器5 (磷含量): ' + r[5] + ' → ' + r[5] + ' mg/kg\n';
+                    sensorText += '寄存器6 (钾含量): ' + r[6] + ' → ' + r[6] + ' mg/kg\n';
+                    sensorText += '寄存器7 (盐度): ' + r[7] + ' → ' + (r[7] / 10).toFixed(1) + '‰\n';
+                    sensorText += '寄存器8 (TDS): ' + r[8] + ' → ' + r[8] + ' mg/L\n';
+                } else {
+                    sensorText += '⚠️ 寄存器数量不足9个，实际: ' + r.length + '\n\n';
+                    for (let i = 0; i < r.length; i++) {
+                        sensorText += '寄存器' + i + ': ' + r[i] + '\n';
+                    }
+                }
+                
+                document.getElementById('sensors').textContent = sensorText;
+            } else {
+                document.getElementById('sensors').textContent = '解析失败';
+            }
+        }
+
+        // 测试用例
+        const testCases = [
+            '01030012000200180019001A001B001C001D001E001F',  // 标准格式
+            '0x01 0x03 0x00 0x12 0x00 0x02 0x00 0x18',        // 带0x
+            '01 03 00 12 00 02 00 18 00 19 00 15',            // 带空格
+        ];
+
+        console.log('测试用例:');
+        testCases.forEach((test, i) => {
+            console.log(`测试${i + 1}:`, test);
+            console.log('结果:', parseModbusData(test));
+        });
+    </script>
+</body>
+</html>
+
+

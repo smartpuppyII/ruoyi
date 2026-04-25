@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>移动端数据流诊断工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 32px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 8px;
+        }
+        .test-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        .test-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .result {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 4px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .warning {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        .info {
+            color: #17a2b8;
+            font-weight: bold;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .badge-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        input[type="number"] {
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 150px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 移动端数据流诊断工具</h1>
+        
+        <div class="card">
+            <h2>📋 测试步骤</h2>
+            <div>
+                <label>设备ID: <input type="number" id="deviceId" value="1" min="1"></label>
+                <button class="test-btn" onclick="runAllTests()">🚀 运行全部测试</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>1️⃣ 测试移动端设备详情API</h2>
+            <button class="test-btn" onclick="testDeviceDetailAPI()">测试 /mobile/api/iot/device/{id}</button>
+            <div id="apiResult" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="card">
+            <h2>2️⃣ 检查返回的数据结构</h2>
+            <button class="test-btn" onclick="checkDataStructure()">分析数据结构</button>
+            <div id="structureResult" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="card">
+            <h2>3️⃣ 测试Modbus数据解析</h2>
+            <button class="test-btn" onclick="testModbusParsing()">解析rawData</button>
+            <div id="parseResult" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="card">
+            <h2>4️⃣ 测试地力计算</h2>
+            <button class="test-btn" onclick="testFertilityCalculation()">计算地力指数</button>
+            <div id="fertilityResult" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="card">
+            <h2>📊 综合诊断报告</h2>
+            <div id="summaryReport" class="result" style="display:none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let globalDeviceData = null;
+        let globalLatestData = null;
+
+        // 运行全部测试
+        async function runAllTests() {
+            console.log('🚀 开始运行全部测试...');
+            await testDeviceDetailAPI();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await checkDataStructure();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testModbusParsing();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testFertilityCalculation();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            generateSummaryReport();
+        }
+
+        // 1. 测试设备详情API
+        async function testDeviceDetailAPI() {
+            const deviceId = document.getElementById('deviceId').value;
+            const resultDiv = document.getElementById('apiResult');
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<span class="info">⏳ 正在请求API...</span>';
+
+            try {
+                const response = await fetch(`/mobile/api/iot/device/${deviceId}`);
+                const result = await response.json();
+                
+                globalDeviceData = result;
+                
+                let html = '<span class="success">✅ API请求成功</span><br><br>';
+                html += `<strong>响应状态码:</strong> ${response.status}<br>`;
+                html += `<strong>result.code:</strong> ${result.code}<br>`;
+                html += `<strong>result.msg:</strong> ${result.msg}<br><br>`;
+                
+                if (result.code === 0 || result.code === 200) {
+                    html += '<span class="success">✅ 返回码正确 (code: 0 或 200)</span><br><br>';
+                    
+                    // 检查设备信息
+                    if (result.data) {
+                        html += `<strong>设备信息:</strong><br>`;
+                        html += `- 设备ID: ${result.data.deviceId}<br>`;
+                        html += `- 设备名称: ${result.data.deviceName}<br>`;
+                        html += `- 设备类型: ${result.data.deviceType}<br>`;
+                        html += `- 状态: ${result.data.status}<br><br>`;
+                    } else {
+                        html += '<span class="error">❌ 缺少 result.data</span><br><br>';
+                    }
+                    
+                    // 检查latestData
+                    if (result.latestData) {
+                        globalLatestData = result.latestData;
+                        html += '<span class="success">✅ 包含 latestData</span><br>';
+                        html += `- dataId: ${result.latestData.dataId}<br>`;
+                        html += `- deviceId: ${result.latestData.deviceId}<br>`;
+                        html += `- createTime: ${result.latestData.createTime}<br>`;
+                        html += `- rawData长度: ${result.latestData.rawData ? result.latestData.rawData.length : 0} 字符<br>`;
+                        if (result.latestData.rawData) {
+                            html += `- rawData预览: ${result.latestData.rawData.substring(0, 50)}...<br>`;
+                        }
+                    } else {
+                        html += '<span class="error">❌ 缺少 result.latestData - 这是关键问题！</span><br>';
+                        html += '<span class="warning">⚠️ MobileIotController 可能没有正确获取数据</span><br>';
+                    }
+                } else {
+                    html += `<span class="error">❌ 返回码错误: ${result.code}</span><br>`;
+                }
+                
+                html += '<br><strong>完整响应JSON:</strong><br>';
+                html += '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+                
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ 请求失败: ${error.message}</span>`;
+            }
+        }
+
+        // 2. 检查数据结构
+        function checkDataStructure() {
+            const resultDiv = document.getElementById('structureResult');
+            resultDiv.style.display = 'block';
+            
+            if (!globalDeviceData) {
+                resultDiv.innerHTML = '<span class="warning">⚠️ 请先运行"测试移动端设备详情API"</span>';
+                return;
+            }
+            
+            let html = '<strong>数据结构检查:</strong><br><br>';
+            let issues = [];
+            
+            // 检查各个关键字段
+            const checks = [
+                { path: 'result.code', value: globalDeviceData.code, expected: [0, 200] },
+                { path: 'result.data', value: globalDeviceData.data, required: true },
+                { path: 'result.latestData', value: globalDeviceData.latestData, required: true },
+                { path: 'result.latestData.rawData', value: globalDeviceData.latestData?.rawData, required: true },
+            ];
+            
+            checks.forEach(check => {
+                if (check.expected) {
+                    const match = check.expected.includes(check.value);
+                    if (match) {
+                        html += `<span class="success">✅ ${check.path} = ${check.value}</span><br>`;
+                    } else {
+                        html += `<span class="error">❌ ${check.path} = ${check.value} (期望: ${check.expected.join(' 或 ')})</span><br>`;
+                        issues.push(`${check.path} 值不正确`);
+                    }
+                } else if (check.required) {
+                    if (check.value) {
+                        html += `<span class="success">✅ ${check.path} 存在</span><br>`;
+                    } else {
+                        html += `<span class="error">❌ ${check.path} 缺失</span><br>`;
+                        issues.push(`${check.path} 缺失`);
+                    }
+                }
+            });
+            
+            html += '<br><strong>诊断结果:</strong><br>';
+            if (issues.length === 0) {
+                html += '<span class="success">✅ 所有检查通过！数据结构正确。</span>';
+            } else {
+                html += '<span class="error">❌ 发现问题:</span><br>';
+                issues.forEach(issue => {
+                    html += `- ${issue}<br>`;
+                });
+            }
+            
+            resultDiv.innerHTML = html;
+        }
+
+        // 3. 测试Modbus解析（从PC端waveform.html复制）
+        function testModbusParsing() {
+            const resultDiv = document.getElementById('parseResult');
+            resultDiv.style.display = 'block';
+            
+            if (!globalLatestData || !globalLatestData.rawData) {
+                resultDiv.innerHTML = '<span class="warning">⚠️ 没有可用的rawData进行解析</span>';
+                return;
+            }
+            
+            const rawData = globalLatestData.rawData;
+            let html = `<strong>原始数据 (rawData):</strong><br>${rawData}<br><br>`;
+            
+            try {
+                const registers = parseModbusData(rawData);
+                
+                if (registers && registers.length >= 9) {
+                    html += '<span class="success">✅ Modbus解析成功</span><br><br>';
+                    
+                    const temperature = calcTemperature(registers[1]);
+                    const humidity = registers[0] / 10;
+                    const ec = registers[2];
+                    const ph = registers[3] / 10; // ÷10，不是÷100
+                    const nitrogen = registers[4];
+                    const phosphorus = registers[5];
+                    const potassium = registers[6];
+                    const salinity = registers[7] / 10;
+                    const tds = registers[8];
+                    
+                    html += '<strong>解析后的传感器数据:</strong><br>';
+                    html += `<table border="1" cellpadding="8" style="border-collapse: collapse; width: 100%; margin-top: 10px;">`;
+                    html += `<tr><th>参数</th><th>寄存器</th><th>原始值</th><th>计算值</th><th>单位</th></tr>`;
+                    html += `<tr><td>土壤湿度</td><td>0</td><td>${registers[0]}</td><td>${humidity.toFixed(1)}</td><td>%</td></tr>`;
+                    html += `<tr><td>土壤温度</td><td>1</td><td>${registers[1]} (0x${registers[1].toString(16).toUpperCase()})</td><td>${temperature.toFixed(1)}</td><td>℃</td></tr>`;
+                    html += `<tr><td>电导率</td><td>2</td><td>${registers[2]}</td><td>${ec}</td><td>μS/cm</td></tr>`;
+                    html += `<tr><td>PH值</td><td>3</td><td>${registers[3]}</td><td>${ph.toFixed(1)}</td><td>-</td></tr>`;
+                    html += `<tr><td>氮含量</td><td>4</td><td>${registers[4]}</td><td>${nitrogen}</td><td>mg/kg</td></tr>`;
+                    html += `<tr><td>磷含量</td><td>5</td><td>${registers[5]}</td><td>${phosphorus}</td><td>mg/kg</td></tr>`;
+                    html += `<tr><td>钾含量</td><td>6</td><td>${registers[6]}</td><td>${potassium}</td><td>mg/kg</td></tr>`;
+                    html += `<tr><td>盐分</td><td>7</td><td>${registers[7]}</td><td>${salinity.toFixed(1)}</td><td>g/L</td></tr>`;
+                    html += `<tr><td>TDS</td><td>8</td><td>${registers[8]}</td><td>${tds}</td><td>mg/L</td></tr>`;
+                    html += `</table>`;
+                } else {
+                    html += `<span class="error">❌ 解析失败：寄存器数量不足 (${registers ? registers.length : 0}/9)</span>`;
+                }
+            } catch (error) {
+                html += `<span class="error">❌ 解析出错: ${error.message}</span>`;
+            }
+            
+            resultDiv.innerHTML = html;
+        }
+
+        // 4. 测试地力计算
+        function testFertilityCalculation() {
+            const resultDiv = document.getElementById('fertilityResult');
+            resultDiv.style.display = 'block';
+            
+            if (!globalLatestData || !globalLatestData.rawData) {
+                resultDiv.innerHTML = '<span class="warning">⚠️ 没有可用的数据进行地力计算</span>';
+                return;
+            }
+            
+            try {
+                const registers = parseModbusData(globalLatestData.rawData);
+                
+                if (registers && registers.length >= 9) {
+                    const fertility = calculateFertility(registers);
+                    
+                    let html = '<span class="success">✅ 地力计算成功</span><br><br>';
+                    html += `<strong>综合地力指数:</strong> <span style="font-size: 24px; font-weight: bold; color: #667eea;">${fertility.index.toFixed(2)}</span><br>`;
+                    html += `<strong>地力等级:</strong> <span style="font-size: 20px; font-weight: bold; color: #28a745;">${fertility.level}</span><br><br>`;
+                    html += `<strong>各项得分:</strong><br>`;
+                    html += `- 有机质得分: ${fertility.scores.organic.toFixed(2)}<br>`;
+                    html += `- 质地得分: ${fertility.scores.texture.toFixed(2)}<br>`;
+                    html += `- pH值得分: ${fertility.scores.ph.toFixed(2)}<br>`;
+                    html += `- 盐分得分: ${fertility.scores.salinity.toFixed(2)}<br>`;
+                    
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = '<span class="error">❌ 数据不足，无法计算地力</span>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ 计算出错: ${error.message}</span>`;
+            }
+        }
+
+        // 生成综合报告
+        function generateSummaryReport() {
+            const resultDiv = document.getElementById('summaryReport');
+            resultDiv.style.display = 'block';
+            
+            let html = '<strong>📊 综合诊断报告</strong><br><br>';
+            
+            let passCount = 0;
+            let totalCount = 4;
+            
+            // 检查API
+            if (globalDeviceData && (globalDeviceData.code === 0 || globalDeviceData.code === 200)) {
+                html += '<span class="success">✅ API请求正常</span><br>';
+                passCount++;
+            } else {
+                html += '<span class="error">❌ API请求异常</span><br>';
+            }
+            
+            // 检查latestData
+            if (globalLatestData && globalLatestData.rawData) {
+                html += '<span class="success">✅ latestData包含rawData</span><br>';
+                passCount++;
+            } else {
+                html += '<span class="error">❌ latestData缺失或无rawData</span><br>';
+            }
+            
+            // 检查解析
+            try {
+                if (globalLatestData && globalLatestData.rawData) {
+                    const registers = parseModbusData(globalLatestData.rawData);
+                    if (registers && registers.length >= 9) {
+                        html += '<span class="success">✅ Modbus数据解析成功</span><br>';
+                        passCount++;
+                    } else {
+                        html += '<span class="error">❌ Modbus数据解析失败</span><br>';
+                    }
+                } else {
+                    html += '<span class="error">❌ 无数据可解析</span><br>';
+                }
+            } catch (e) {
+                html += '<span class="error">❌ Modbus解析异常</span><br>';
+            }
+            
+            // 检查地力计算
+            try {
+                if (globalLatestData && globalLatestData.rawData) {
+                    const registers = parseModbusData(globalLatestData.rawData);
+                    const fertility = calculateFertility(registers);
+                    if (fertility && fertility.index > 0) {
+                        html += '<span class="success">✅ 地力计算成功</span><br>';
+                        passCount++;
+                    } else {
+                        html += '<span class="error">❌ 地力计算失败</span><br>';
+                    }
+                } else {
+                    html += '<span class="error">❌ 无数据可计算地力</span><br>';
+                }
+            } catch (e) {
+                html += '<span class="error">❌ 地力计算异常</span><br>';
+            }
+            
+            html += '<br><strong>总体评估:</strong><br>';
+            const percentage = (passCount / totalCount * 100).toFixed(0);
+            
+            if (passCount === totalCount) {
+                html += `<span class="success" style="font-size: 18px;">✅ 所有测试通过 (${passCount}/${totalCount})</span><br>`;
+                html += '<span class="info">移动端数据流正常，可以正常显示！</span>';
+            } else {
+                html += `<span class="warning" style="font-size: 18px;">⚠️ 部分测试失败 (${passCount}/${totalCount})</span><br>`;
+                html += '<br><strong>可能的问题:</strong><br>';
+                
+                if (!globalLatestData || !globalLatestData.rawData) {
+                    html += '- <span class="error">MobileIotController未正确返回latestData</span><br>';
+                    html += '  → 检查 MobileIotController.getDeviceInfo() 方法<br>';
+                    html += '  → 检查 IotDataService.selectLatestDataByDeviceId() 实现<br>';
+                    html += '  → 检查数据库中是否有对应deviceId的iot_data记录<br>';
+                }
+            }
+            
+            resultDiv.innerHTML = html;
+        }
+
+        // ===== 核心算法（从PC端复制） =====
+        
+        // Modbus解析
+        function parseModbusData(rawData) {
+            if (!rawData) return null;
+            
+            let hex = rawData.replace(/\s+/g, '').toUpperCase();
+            if (hex.length < 26) return null;
+            
+            const registers = [];
+            const dataStart = 6;
+            
+            for (let i = 0; i < 9; i++) {
+                const pos = dataStart + i * 4;
+                if (pos + 4 > hex.length) break;
+                const highByte = parseInt(hex.substr(pos, 2), 16);
+                const lowByte = parseInt(hex.substr(pos + 2, 2), 16);
+                const value = (highByte << 8) | lowByte;
+                registers.push(value);
+            }
+            
+            return registers;
+        }
+
+        // 温度补码处理
+        function calcTemperature(raw) {
+            if (raw > 0x7FFF) {
+                raw = raw - 0x10000;
+            }
+            return raw / 10.0;
+        }
+
+        // 地力计算
+        function calculateFertility(registers) {
+            const temperature = calcTemperature(registers[1]);
+            const humidity = registers[0] / 10;
+            const ec = registers[2];
+            const ph = registers[3] / 10;
+            const nitrogen = registers[4];
+            const phosphorus = registers[5];
+            const potassium = registers[6];
+            const salinity = registers[7] / 10;
+            
+            const organicScore = calculateOrganicScore(nitrogen, phosphorus, potassium);
+            const textureScore = calculateTextureScore(humidity, ec);
+            const phScore = calculatePhScore(ph);
+            const salinityScore = calculateSalinityScore(salinity);
+            
+            const fertilityIndex = (organicScore * 0.35 + textureScore * 0.25 + phScore * 0.2 + salinityScore * 0.2);
+            const level = determineFertilityLevel(fertilityIndex);
+            
+            return {
+                index: fertilityIndex,
+                level: level,
+                scores: {
+                    organic: organicScore,
+                    texture: textureScore,
+                    ph: phScore,
+                    salinity: salinityScore
+                }
+            };
+        }
+
+        function calculateOrganicScore(n, p, k) {
+            const nScore = Math.min(n / 150 * 100, 100);
+            const pScore = Math.min(p / 40 * 100, 100);
+            const kScore = Math.min(k / 200 * 100, 100);
+            return (nScore * 0.4 + pScore * 0.3 + kScore * 0.3);
+        }
+
+        function calculateTextureScore(humidity, ec) {
+            let humidityScore = 0;
+            if (humidity >= 20 && humidity <= 30) humidityScore = 100;
+            else if (humidity >= 15 && humidity < 20) humidityScore = 80;
+            else if (humidity >= 30 && humidity < 35) humidityScore = 80;
+            else if (humidity >= 10 && humidity < 15) humidityScore = 60;
+            else if (humidity >= 35 && humidity < 40) humidityScore = 60;
+            else humidityScore = 40;
+            
+            let ecScore = 0;
+            if (ec >= 200 && ec <= 800) ecScore = 100;
+            else if (ec >= 100 && ec < 200) ecScore = 80;
+            else if (ec >= 800 && ec < 1200) ecScore = 80;
+            else if (ec >= 50 && ec < 100) ecScore = 60;
+            else if (ec >= 1200 && ec < 1500) ecScore = 60;
+            else ecScore = 40;
+            
+            return (humidityScore * 0.6 + ecScore * 0.4);
+        }
+
+        function calculatePhScore(ph) {
+            if (ph >= 6.5 && ph <= 7.5) return 100;
+            else if (ph >= 6.0 && ph < 6.5) return 85;
+            else if (ph >= 7.5 && ph < 8.0) return 85;
+            else if (ph >= 5.5 && ph < 6.0) return 70;
+            else if (ph >= 8.0 && ph < 8.5) return 70;
+            else if (ph >= 5.0 && ph < 5.5) return 50;
+            else if (ph >= 8.5 && ph < 9.0) return 50;
+            else return 30;
+        }
+
+        function calculateSalinityScore(salinity) {
+            if (salinity < 0.3) return 100;
+            else if (salinity < 0.6) return 85;
+            else if (salinity < 1.0) return 70;
+            else if (salinity < 1.5) return 50;
+            else if (salinity < 2.0) return 30;
+            else return 10;
+        }
+
+        function determineFertilityLevel(index) {
+            if (index >= 80) return "一级（优）";
+            else if (index >= 65) return "二级（良）";
+            else if (index >= 50) return "三级（中）";
+            else if (index >= 35) return "四级（低）";
+            else return "五级（差）";
+        }
+    </script>
+</body>
+</html>
+

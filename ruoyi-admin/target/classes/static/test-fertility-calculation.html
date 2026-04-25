@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>地力计算测试页面</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css">
+    <style>
+        .fertility-panel {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+            text-align: center;
+            height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        
+        .fertility-value {
+            font-size: 24px;
+            color: #1ab394;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .fertility-unit {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .weight-distribution, .level-standards {
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .weight-item, .level-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .weight-item:last-child, .level-item:last-child {
+            border-bottom: none;
+        }
+        
+        .weight-label, .level-grade {
+            color: #676a6c;
+            font-size: 13px;
+        }
+        
+        .weight-value, .level-range {
+            color: #1ab394;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        
+        .level-range {
+            background: #e8f5e8;
+            padding: 2px 8px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h2>天然打草场地力综合评价测试</h2>
+        
+        <div class="row">
+            <div class="col-md-6">
+                <h4>输入传感器数据</h4>
+                <form id="sensorForm">
+                    <div class="form-group">
+                        <label>湿度 (%)</label>
+                        <input type="number" class="form-control" id="humidity" value="25" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>温度 (°C)</label>
+                        <input type="number" class="form-control" id="temperature" value="20" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>电导率 (μS/cm)</label>
+                        <input type="number" class="form-control" id="conductivity" value="500" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label>PH值</label>
+                        <input type="number" class="form-control" id="ph" value="6.5" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>氮含量 (mg/kg)</label>
+                        <input type="number" class="form-control" id="nitrogen" value="200" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label>磷含量 (mg/kg)</label>
+                        <input type="number" class="form-control" id="phosphorus" value="150" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label>钾含量 (mg/kg)</label>
+                        <input type="number" class="form-control" id="potassium" value="180" step="1">
+                    </div>
+                    <div class="form-group">
+                        <label>盐度 (‰)</label>
+                        <input type="number" class="form-control" id="salinity" value="1.5" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>TDS (mg/L)</label>
+                        <input type="number" class="form-control" id="tds" value="300" step="1">
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="calculateFertility()">计算地力指数</button>
+                </form>
+            </div>
+            
+            <div class="col-md-6">
+                <h4>地力评价结果</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="fertility-panel">
+                            <h6>综合地力指数</h6>
+                            <div class="fertility-value" id="fertilityIndex">--</div>
+                            <div class="fertility-unit">综合指数</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="fertility-panel">
+                            <h6>地力等级</h6>
+                            <div class="fertility-value" id="fertilityLevel">--</div>
+                            <div class="fertility-unit">等级评定</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="weight-distribution">
+                    <h6>指标权重分布</h6>
+                    <div class="weight-item">
+                        <span class="weight-label">有机质、全氮、微生物碳、根系层深度</span>
+                        <span class="weight-value">60%</span>
+                    </div>
+                    <div class="weight-item">
+                        <span class="weight-label">土壤紧实度（或容重）、土壤质地</span>
+                        <span class="weight-value">30%</span>
+                    </div>
+                    <div class="weight-item">
+                        <span class="weight-label">PH、含盐量</span>
+                        <span class="weight-value">10%</span>
+                    </div>
+                </div>
+                
+                <div class="level-standards">
+                    <h6>地力等级标准</h6>
+                    <div class="level-item">
+                        <span class="level-grade">一级（高）</span>
+                        <span class="level-range">>0.9</span>
+                    </div>
+                    <div class="level-item">
+                        <span class="level-grade">二级（较高）</span>
+                        <span class="level-range">0.8~0.9</span>
+                    </div>
+                    <div class="level-item">
+                        <span class="level-grade">三级（中）</span>
+                        <span class="level-range">0.6~0.8</span>
+                    </div>
+                    <div class="level-item">
+                        <span class="level-grade">四级（较低）</span>
+                        <span class="level-range">0.4~0.6</span>
+                    </div>
+                    <div class="level-item">
+                        <span class="level-grade">五级（低）</span>
+                        <span class="level-range"><0.4</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // 计算土壤地力综合指数
+        function calculateSoilFertility(sensorData) {
+            try {
+                // 计算各项指标的隶属度（0-1之间）
+                const organicMatterScore = calculateOrganicMatterScore(sensorData.humidity, sensorData.nitrogen);
+                const soilTextureScore = calculateSoilTextureScore(sensorData.conductivity, sensorData.tds);
+                const phScore = calculatePhScore(sensorData.ph);
+                const salinityScore = calculateSalinityScore(sensorData.salinity);
+                
+                // 计算综合地力指数 P = Σ(Ci × Fi)
+                // 权重分配：有机质等60%，土壤质地30%，PH和盐度10%
+                const fertilityIndex = (organicMatterScore * 0.6) + (soilTextureScore * 0.3) + ((phScore + salinityScore) * 0.05);
+                
+                // 确定地力等级
+                const fertilityLevel = determineFertilityLevel(fertilityIndex);
+                
+                // 更新界面显示
+                updateFertilityDisplay(fertilityIndex, fertilityLevel);
+                
+                console.log('地力计算完成:', {
+                    organicMatterScore,
+                    soilTextureScore,
+                    phScore,
+                    salinityScore,
+                    fertilityIndex,
+                    fertilityLevel
+                });
+                
+            } catch (error) {
+                console.error('地力计算失败:', error);
+                alert('计算失败: ' + error.message);
+            }
+        }
+        
+        // 计算有机质、全氮、微生物碳、根系层深度得分
+        function calculateOrganicMatterScore(humidity, nitrogen) {
+            // 湿度得分（理想范围20-40%）
+            let humidityScore = 0;
+            if (humidity >= 20 && humidity <= 40) {
+                humidityScore = 1.0;
+            } else if (humidity >= 15 && humidity <= 45) {
+                humidityScore = 0.8;
+            } else if (humidity >= 10 && humidity <= 50) {
+                humidityScore = 0.6;
+            } else if (humidity >= 5 && humidity <= 60) {
+                humidityScore = 0.4;
+            } else {
+                humidityScore = 0.2;
+            }
+            
+            // 氮含量得分（理想范围100-300 mg/kg）
+            let nitrogenScore = 0;
+            if (nitrogen >= 100 && nitrogen <= 300) {
+                nitrogenScore = 1.0;
+            } else if (nitrogen >= 80 && nitrogen <= 400) {
+                nitrogenScore = 0.8;
+            } else if (nitrogen >= 60 && nitrogen <= 500) {
+                nitrogenScore = 0.6;
+            } else if (nitrogen >= 40 && nitrogen <= 600) {
+                nitrogenScore = 0.4;
+            } else {
+                nitrogenScore = 0.2;
+            }
+            
+            // 综合得分（取平均值）
+            return (humidityScore + nitrogenScore) / 2;
+        }
+        
+        // 计算土壤紧实度（或容重）、土壤质地得分
+        function calculateSoilTextureScore(conductivity, tds) {
+            // 电导率得分（理想范围200-800 μS/cm）
+            let conductivityScore = 0;
+            if (conductivity >= 200 && conductivity <= 800) {
+                conductivityScore = 1.0;
+            } else if (conductivity >= 150 && conductivity <= 1000) {
+                conductivityScore = 0.8;
+            } else if (conductivity >= 100 && conductivity <= 1200) {
+                conductivityScore = 0.6;
+            } else if (conductivity >= 50 && conductivity <= 1500) {
+                conductivityScore = 0.4;
+            } else {
+                conductivityScore = 0.2;
+            }
+            
+            // TDS得分（理想范围100-500 mg/L）
+            let tdsScore = 0;
+            if (tds >= 100 && tds <= 500) {
+                tdsScore = 1.0;
+            } else if (tds >= 80 && tds <= 600) {
+                tdsScore = 0.8;
+            } else if (tds >= 60 && tds <= 700) {
+                tdsScore = 0.6;
+            } else if (tds >= 40 && tds <= 800) {
+                tdsScore = 0.4;
+            } else {
+                tdsScore = 0.2;
+            }
+            
+            // 综合得分（取平均值）
+            return (conductivityScore + tdsScore) / 2;
+        }
+        
+        // 计算PH值得分
+        function calculatePhScore(ph) {
+            // PH理想范围6.0-7.5
+            if (ph >= 6.0 && ph <= 7.5) {
+                return 1.0;
+            } else if (ph >= 5.5 && ph <= 8.0) {
+                return 0.8;
+            } else if (ph >= 5.0 && ph <= 8.5) {
+                return 0.6;
+            } else if (ph >= 4.5 && ph <= 9.0) {
+                return 0.4;
+            } else {
+                return 0.2;
+            }
+        }
+        
+        // 计算含盐量得分
+        function calculateSalinityScore(salinity) {
+            // 盐度理想范围0-2‰
+            if (salinity >= 0 && salinity <= 2) {
+                return 1.0;
+            } else if (salinity >= 0 && salinity <= 3) {
+                return 0.8;
+            } else if (salinity >= 0 && salinity <= 4) {
+                return 0.6;
+            } else if (salinity >= 0 && salinity <= 5) {
+                return 0.4;
+            } else {
+                return 0.2;
+            }
+        }
+        
+        // 确定地力等级
+        function determineFertilityLevel(fertilityIndex) {
+            if (fertilityIndex > 0.9) {
+                return '一级（高）';
+            } else if (fertilityIndex >= 0.8) {
+                return '二级（较高）';
+            } else if (fertilityIndex >= 0.6) {
+                return '三级（中）';
+            } else if (fertilityIndex >= 0.4) {
+                return '四级（较低）';
+            } else {
+                return '五级（低）';
+            }
+        }
+        
+        // 更新地力评价显示
+        function updateFertilityDisplay(fertilityIndex, fertilityLevel) {
+            $('#fertilityIndex').text(fertilityIndex.toFixed(3));
+            $('#fertilityLevel').text(fertilityLevel);
+            
+            // 根据等级设置颜色
+            let levelColor = '#1ab394'; // 默认绿色
+            if (fertilityLevel.includes('一级') || fertilityLevel.includes('二级')) {
+                levelColor = '#1ab394'; // 绿色
+            } else if (fertilityLevel.includes('三级')) {
+                levelColor = '#f0ad4e'; // 橙色
+            } else if (fertilityLevel.includes('四级') || fertilityLevel.includes('五级')) {
+                levelColor = '#d9534f'; // 红色
+            }
+            
+            $('#fertilityLevel').css('color', levelColor);
+        }
+        
+        // 计算按钮点击事件
+        function calculateFertility() {
+            const sensorData = {
+                humidity: parseFloat($('#humidity').val()) || 0,
+                temperature: parseFloat($('#temperature').val()) || 0,
+                conductivity: parseFloat($('#conductivity').val()) || 0,
+                ph: parseFloat($('#ph').val()) || 0,
+                nitrogen: parseFloat($('#nitrogen').val()) || 0,
+                phosphorus: parseFloat($('#phosphorus').val()) || 0,
+                potassium: parseFloat($('#potassium').val()) || 0,
+                salinity: parseFloat($('#salinity').val()) || 0,
+                tds: parseFloat($('#tds').val()) || 0
+            };
+            
+            calculateSoilFertility(sensorData);
+        }
+        
+        // 页面加载完成后设置默认值
+        $(document).ready(function() {
+            // 可以在这里设置一些默认的测试数据
+        });
+    </script>
+</body>
+</html>
+
+

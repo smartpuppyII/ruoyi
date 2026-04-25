@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.ModbusRegisterMappingMapper">
+    
+    <resultMap type="ModbusRegisterMapping" id="ModbusRegisterMappingResult">
+        <result property="id"                    column="id"                    />
+        <result property="deviceId"              column="device_id"            />
+        <result property="registerAddressHex"    column="register_address_hex" />
+        <result property="registerAddressDec"    column="register_address_dec" />
+        <result property="sensorName"            column="sensor_name"          />
+        <result property="sensorType"            column="sensor_type"          />
+        <result property="dataType"              column="data_type"            />
+        <result property="scaleFactor"           column="scale_factor"         />
+        <result property="offsetValue"           column="offset_value"         />
+        <result property="unit"                  column="unit"                 />
+        <result property="description"           column="description"          />
+        <result property="isActive"              column="is_active"            />
+        <result property="createTime"            column="create_time"          />
+        <result property="updateTime"            column="update_time"          />
+    </resultMap>
+
+    <sql id="selectModbusRegisterMappingVo">
+        select id, device_id, register_address_hex, register_address_dec, sensor_name, sensor_type, 
+               data_type, scale_factor, offset_value, unit, description, is_active, create_time, update_time
+        from modbus_register_mapping
+    </sql>
+
+    <select id="selectByDeviceId" parameterType="Long" resultMap="ModbusRegisterMappingResult">
+        <include refid="selectModbusRegisterMappingVo"/>
+        where device_id = #{deviceId} and is_active = 1
+        order by register_address_dec
+    </select>
+
+    <select id="selectByRegisterAddress" resultMap="ModbusRegisterMappingResult">
+        <include refid="selectModbusRegisterMappingVo"/>
+        where device_id = #{deviceId} and register_address_dec = #{registerAddress} and is_active = 1
+    </select>
+
+    <select id="selectAllActive" resultMap="ModbusRegisterMappingResult">
+        <include refid="selectModbusRegisterMappingVo"/>
+        where is_active = 1
+        order by device_id, register_address_dec
+    </select>
+
+</mapper>

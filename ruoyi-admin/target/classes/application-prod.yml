@@ -1,0 +1,150 @@
+# 生产环境配置文件
+# 用于云服务器部署
+
+# 项目相关配置
+ruoyi:
+  name: RuoYi
+  version: 4.8.1
+  copyrightYear: 2024
+  demoEnabled: false
+  # 生产环境文件路径 - 根据实际服务器路径修改
+  profile: /data/ruoyi/uploadPath
+  addressEnabled: true
+  captchaEnabled: true
+  vegetation:
+    uploadPath: /data/ruoyi/uploadPath/vegetation
+    allowedFormats: jpg,jpeg,png
+    maxFileSize: 10
+
+# MQTT配置
+mqtt:
+  brokerUrl: tcp://broker.emqx.io:1883
+  clientId: ruoyi_mqtt_client_prod
+  username: 
+  password: 
+  defaultTopic: GE_pub
+  timeout: 30
+  keepAlive: 60
+  cleanSession: true
+  qos: 0
+
+# Modbus配置
+modbus:
+  polling:
+    enabled: true
+    intervalMs: 2000
+  slaveId: 1
+
+# 生产环境服务器配置
+server:
+  # 生产端口
+  port: 8080
+  servlet:
+    context-path: /
+  tomcat:
+    uri-encoding: UTF-8
+    accept-count: 1000
+    threads:
+      max: 800
+      min-spare: 100
+  # 移动端支持
+  forward-headers-strategy: framework
+
+# 日志配置
+logging:
+  level:
+    com.ruoyi: info
+    org.springframework: warn
+  file:
+    path: /data/ruoyi/logs
+    max-size: 100MB
+    max-history: 30
+
+# Spring配置
+spring:
+  thymeleaf:
+    mode: HTML
+    encoding: utf-8
+    cache: true
+  messages:
+    basename: static/i18n/messages
+  jackson:
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
+  profiles:
+    active: druid
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 20MB
+  devtools:
+    restart:
+      enabled: false
+
+# MyBatis配置
+mybatis:
+  typeAliasesPackage: com.ruoyi.**.domain
+  mapperLocations: classpath*:mapper/**/*Mapper.xml
+  configLocation: classpath:mybatis/mybatis-config.xml
+
+# PageHelper配置
+pagehelper:
+  helperDialect: mysql
+  supportMethodsArguments: true
+  params: count=countSql
+
+# Shiro配置
+shiro:
+  user:
+    loginUrl: /login
+    unauthorizedUrl: /unauth
+    indexUrl: /index
+    captchaEnabled: true
+    captchaType: math
+  cookie:
+    domain:
+    path: /
+    httpOnly: true
+    maxAge: 30
+    cipherKey:
+  session:
+    expireTime: 30
+    dbSyncPeriod: 1
+    validationInterval: 10
+    maxSession: -1
+    kickoutAfter: false
+  rememberMe:
+    enabled: true
+
+# XSS防护
+xss:
+  enabled: true
+  excludes: /system/notice/*
+  urlPatterns: /system/*,/monitor/*,/tool/*
+
+# CSRF防护
+csrf:
+  enabled: false
+  whites: /druid
+
+# Swagger配置 (生产环境建议关闭)
+swagger:
+  enabled: false
+
+# JWT配置
+jwt:
+  tokenHeader: Authorization
+  secret: ${JWT_SECRET:ruoyiProductionSecret2024ChangeThis}
+  expiration: 604800
+  tokenHead: "Bearer "
+
+
+
+
+
+
+
+
+
+
+

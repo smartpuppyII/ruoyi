@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('植被覆盖率分析')" />
+    <style>
+        .upload-mode-selector {
+            margin-bottom: 20px;
+        }
+        .upload-mode-btn {
+            padding: 10px 20px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        .upload-mode-btn.active {
+            background-color: #1ab394;
+            border-color: #1ab394;
+            color: white;
+        }
+        .upload-panel {
+            display: none;
+        }
+        .upload-panel.active {
+            display: block;
+        }
+        #camera-video {
+            width: 100%;
+            max-width: 640px;
+            border: 2px solid #e7eaec;
+            border-radius: 4px;
+        }
+        #camera-canvas {
+            display: none;
+        }
+        .camera-controls {
+            margin-top: 10px;
+        }
+        .preview-image {
+            max-width: 100%;
+            max-height: 400px;
+            margin-top: 15px;
+            border: 2px solid #e7eaec;
+            border-radius: 4px;
+        }
+        .result-panel {
+            background-color: #f3f3f4;
+            padding: 20px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .result-item {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .result-item strong {
+            display: inline-block;
+            width: 120px;
+        }
+        .coverage-display {
+            font-size: 48px;
+            font-weight: bold;
+            color: #1ab394;
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body class="gray-bg">
+    <div class="container-div">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>植被覆盖率图片分析</h5>
+                    </div>
+                    <div class="ibox-content">
+                        <form class="form-horizontal m" id="form-vegetation-add">
+                            <!-- 设备ID输入 -->
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label">设备ID：</label>
+                                <div class="col-sm-8">
+                                    <input type="text" id="deviceId" name="deviceId" class="form-control" placeholder="可选，关联IoT设备">
+                                </div>
+                            </div>
+
+                            <!-- 上传方式选择 -->
+                            <div class="form-group">
+                                <label class="col-sm-3 control-label is-required">选择方式：</label>
+                                <div class="col-sm-8 upload-mode-selector">
+                                    <button type="button" class="btn btn-default upload-mode-btn active" data-mode="file">
+                                        <i class="fa fa-folder-open"></i> 本地文件
+                                    </button>
+                                    <button type="button" class="btn btn-default upload-mode-btn" data-mode="camera">
+                                        <i class="fa fa-camera"></i> 拍照上传
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 本地文件上传面板 -->
+                            <div class="form-group upload-panel active" id="file-upload-panel">
+                                <label class="col-sm-3 control-label is-required">选择图片：</label>
+                                <div class="col-sm-8">
+                                    <input type="file" id="file-input" accept="image/jpeg,image/jpg,image/png" class="form-control">
+                                    <div class="help-block">支持 JPG、JPEG、PNG 格式，大小不超过10MB</div>
+                                    <img id="file-preview" class="preview-image" style="display:none;" />
+                                </div>
+                            </div>
+
+                            <!-- 拍照上传面板 -->
+                            <div class="form-group upload-panel" id="camera-upload-panel">
+                                <label class="col-sm-3 control-label">摄像头：</label>
+                                <div class="col-sm-8">
+                                    <video id="camera-video" autoplay playsinline></video>
+                                    <canvas id="camera-canvas"></canvas>
+                                    <div class="camera-controls">
+                                        <button type="button" class="btn btn-success" id="start-camera-btn">
+                                            <i class="fa fa-video-camera"></i> 启动摄像头
+                                        </button>
+                                        <button type="button" class="btn btn-primary" id="capture-btn" style="display:none;">
+                                            <i class="fa fa-camera"></i> 拍照
+                                        </button>
+                                        <button type="button" class="btn btn-warning" id="stop-camera-btn" style="display:none;">
+                                            <i class="fa fa-stop"></i> 停止摄像头
+                                        </button>
+                                    </div>
+                                    <img id="camera-preview" class="preview-image" style="display:none;" />
+                                </div>
+                            </div>
+
+                            <!-- 分析按钮 -->
+                            <div class="form-group">
+                                <div class="col-sm-offset-3 col-sm-8">
+                                    <button type="button" class="btn btn-primary btn-lg" id="analyze-btn">
+                                        <i class="fa fa-play-circle"></i> 开始分析
+                                    </button>
+                                    <button type="button" class="btn btn-default" id="reset-btn">
+                                        <i class="fa fa-refresh"></i> 重置
+                                    </button>
+                                    <button type="button" class="btn btn-default" onclick="window.location.href='[[${'/system/vegetation'}]]'">
+                                        <i class="fa fa-reply"></i> 返回列表
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 分析结果显示 -->
+                            <div class="form-group" id="result-container" style="display:none;">
+                                <label class="col-sm-3 control-label">分析结果：</label>
+                                <div class="col-sm-8">
+                                    <div class="result-panel">
+                                        <div class="coverage-display" id="coverage-display">--</div>
+                                        <div class="result-item">
+                                            <strong>图片名称：</strong>
+                                            <span id="result-image-name">--</span>
+                                        </div>
+                                        <div class="result-item">
+                                            <strong>绿色像素：</strong>
+                                            <span id="result-green-pixels">--</span>
+                                        </div>
+                                        <div class="result-item">
+                                            <strong>总像素：</strong>
+                                            <span id="result-total-pixels">--</span>
+                                        </div>
+                                        <div class="result-item">
+                                            <strong>分析时间：</strong>
+                                            <span id="result-analysis-time">--</span>
+                                        </div>
+                                        <div class="result-item">
+                                            <strong>设备ID：</strong>
+                                            <span id="result-device-id">--</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <th:block th:include="include :: footer" />
+    <script th:inline="javascript">
+        var prefix = ctx + "system/vegetation";
+        var currentMode = 'file'; // 当前上传模式
+        var cameraStream = null; // 摄像头流
+        var capturedImageBlob = null; // 拍照捕获的图片
+
+        $(function() {
+            initEventHandlers();
+        });
+
+        // 初始化事件处理
+        function initEventHandlers() {
+            // 上传方式切换
+            $('.upload-mode-btn').click(function() {
+                var mode = $(this).data('mode');
+                switchUploadMode(mode);
+            });
+
+            // 本地文件选择
+            $('#file-input').change(function(e) {
+                handleFileSelect(e);
+            });
+
+            // 启动摄像头
+            $('#start-camera-btn').click(function() {
+                startCamera();
+            });
+
+            // 停止摄像头
+            $('#stop-camera-btn').click(function() {
+                stopCamera();
+            });
+
+            // 拍照
+            $('#capture-btn').click(function() {
+                capturePhoto();
+            });
+
+            // 开始分析
+            $('#analyze-btn').click(function() {
+                analyzeImage();
+            });
+
+            // 重置
+            $('#reset-btn').click(function() {
+                resetForm();
+            });
+        }
+
+        // 切换上传模式
+        function switchUploadMode(mode) {
+            currentMode = mode;
+            $('.upload-mode-btn').removeClass('active');
+            $('.upload-mode-btn[data-mode="' + mode + '"]').addClass('active');
+            $('.upload-panel').removeClass('active');
+            $('#' + mode + '-upload-panel').addClass('active');
+            
+            // 停止摄像头（如果正在运行）
+            if (mode === 'file' && cameraStream) {
+                stopCamera();
+            }
+            
+            // 隐藏结果
+            $('#result-container').hide();
+        }
+
+        // 处理文件选择
+        function handleFileSelect(e) {
+            var file = e.target.files[0];
+            if (!file) return;
+
+            // 验证文件类型
+            if (!file.type.match('image/(jpeg|jpg|png)')) {
+                $.modal.msgError('只支持 JPG、JPEG、PNG 格式的图片');
+                return;
+            }
+
+            // 验证文件大小
+            if (file.size > 10 * 1024 * 1024) {
+                $.modal.msgError('文件大小不能超过10MB');
+                return;
+            }
+
+            // 预览图片
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                $('#file-preview').attr('src', e.target.result).show();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 启动摄像头
+        function startCamera() {
+            navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    facingMode: 'environment' // 优先使用后置摄像头
+                } 
+            })
+            .then(function(stream) {
+                cameraStream = stream;
+                var video = document.getElementById('camera-video');
+                video.srcObject = stream;
+                video.play();
+                
+                $('#start-camera-btn').hide();
+                $('#capture-btn').show();
+                $('#stop-camera-btn').show();
+                $('#camera-preview').hide();
+                
+                $.modal.msgSuccess('摄像头已启动');
+            })
+            .catch(function(err) {
+                console.error('摄像头启动失败:', err);
+                $.modal.msgError('摄像头启动失败：' + err.message);
+            });
+        }
+
+        // 停止摄像头
+        function stopCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+                
+                var video = document.getElementById('camera-video');
+                video.srcObject = null;
+                
+                $('#start-camera-btn').show();
+                $('#capture-btn').hide();
+                $('#stop-camera-btn').hide();
+            }
+        }
+
+        // 拍照
+        function capturePhoto() {
+            var video = document.getElementById('camera-video');
+            var canvas = document.getElementById('camera-canvas');
+            var context = canvas.getContext('2d');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // 转换为Blob
+            canvas.toBlob(function(blob) {
+                capturedImageBlob = blob;
+                
+                // 显示预览
+                var url = URL.createObjectURL(blob);
+                $('#camera-preview').attr('src', url).show();
+                
+                // 停止摄像头
+                stopCamera();
+                
+                $.modal.msgSuccess('拍照成功，点击"开始分析"进行植被覆盖率分析');
+            }, 'image/jpeg', 0.95);
+        }
+
+        // 分析图片
+        function analyzeImage() {
+            var formData = new FormData();
+            var deviceId = $('#deviceId').val();
+            
+            if (currentMode === 'file') {
+                // 本地文件模式
+                var fileInput = document.getElementById('file-input');
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    $.modal.msgError('请先选择图片文件');
+                    return;
+                }
+                formData.append('file', fileInput.files[0]);
+            } else if (currentMode === 'camera') {
+                // 拍照模式
+                if (!capturedImageBlob) {
+                    $.modal.msgError('请先拍照');
+                    return;
+                }
+                formData.append('file', capturedImageBlob, 'camera-photo.jpg');
+            }
+            
+            if (deviceId) {
+                formData.append('deviceId', deviceId);
+            }
+
+            // 显示加载提示
+            var loading = $.modal.loading("正在分析图片，请稍候...");
+            $('#analyze-btn').prop('disabled', true);
+
+            // 发送分析请求
+            $.ajax({
+                url: prefix + '/analyze',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    $.modal.closeLoading();
+                    $('#analyze-btn').prop('disabled', false);
+                    
+                    if (response.code === 0) {
+                        $.modal.msgSuccess('分析完成！');
+                        displayResult(response.data);
+                    } else {
+                        $.modal.msgError(response.msg || '分析失败');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $.modal.closeLoading();
+                    $('#analyze-btn').prop('disabled', false);
+                    
+                    var errorMsg = '分析失败';
+                    try {
+                        if (xhr.responseJSON && xhr.responseJSON.msg) {
+                            errorMsg = xhr.responseJSON.msg;
+                        }
+                    } catch (e) {}
+                    
+                    $.modal.msgError(errorMsg);
+                }
+            });
+        }
+
+        // 显示分析结果
+        function displayResult(data) {
+            $('#coverage-display').text(data.coverageRate.toFixed(2) + '%');
+            $('#result-image-name').text(data.imageName || '--');
+            $('#result-green-pixels').text(formatNumber(data.greenPixelCount));
+            $('#result-total-pixels').text(formatNumber(data.totalPixelCount));
+            $('#result-analysis-time').text(formatDateTime(data.analysisTime));
+            $('#result-device-id').text(data.deviceId || '未关联');
+            $('#result-container').show();
+            
+            // 平滑滚动到结果区域
+            $('html, body').animate({
+                scrollTop: $('#result-container').offset().top - 100
+            }, 500);
+        }
+
+        // 格式化数字（添加千位分隔符）
+        function formatNumber(num) {
+            if (!num) return '0';
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        // 格式化日期时间
+        function formatDateTime(dateStr) {
+            if (!dateStr) return '--';
+            var date = new Date(dateStr);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        // 重置表单
+        function resetForm() {
+            // 清空输入
+            $('#deviceId').val('');
+            $('#file-input').val('');
+            $('#file-preview').hide();
+            $('#camera-preview').hide();
+            capturedImageBlob = null;
+            
+            // 停止摄像头
+            stopCamera();
+            
+            // 隐藏结果
+            $('#result-container').hide();
+            
+            // 重置为文件上传模式
+            switchUploadMode('file');
+        }
+    </script>
+</body>
+</html>

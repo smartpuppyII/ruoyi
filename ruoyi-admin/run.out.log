@@ -1,0 +1,119 @@
+Application Version: 4.8.1
+Spring Boot Version: 2.5.15
+////////////////////////////////////////////////////////////////////
+//                          _ooOoo_                               //
+//                         o8888888o                              //
+//                         88" . "88                              //
+//                         (| ^_^ |)                              //
+//                         O\  =  /O                              //
+//                      ____/`---'\____                           //
+//                    .'  \\|     |//  `.                         //
+//                   /  \\|||  :  |||//  \                        //
+//                  /  _||||| -:- |||||-  \                       //
+//                  |   | \\\  -  /// |   |                       //
+//                  | \_|  ''\---/''  |   |                       //
+//                  \  .-\__  `-`  ___/-. /                       //
+//                ___`. .'  /--.--\  `. . ___                     //
+//              ."" '<  `.___\_<|>_/___.'  >'"".                  //
+//            | | :  `- \`.;`\ _ /`;.`/ - ` : | |                 //
+//            \  \ `-.   \_ __\ /__ _/   .-` /  /                 //
+//      ========`-.____`-.___\_____/___.-`____.-'========         //
+//                           `=---='                              //
+//      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^        //
+//             佛祖保佑       永不宕机      永无BUG               //
+////////////////////////////////////////////////////////////////////
+20:44:37.242 [background-preinit] INFO  o.h.v.i.util.Version - [<clinit>,21] - HV000001: Hibernate Validator 6.2.5.Final
+20:44:37.258 [main] INFO  c.r.RuoYiApplication - [logStarting,55] - Starting RuoYiApplication using Java 1.8.0_461 on lljj88888888 with PID 9132 (D:\ruoyi\RuoYi-master\ruoyi-admin\target\ruoyi-admin.jar started by 10117 in D:\ruoyi\RuoYi-master)
+20:44:37.259 [main] DEBUG c.r.RuoYiApplication - [logStarting,56] - Running with Spring Boot v2.5.15, Spring v5.3.39
+20:44:37.261 [main] INFO  c.r.RuoYiApplication - [logStartupProfileInfo,686] - The following 1 profile is active: "druid"
+20:44:40.925 [main] WARN  n.s.e.DiskStorePathManager - [resolveAndLockIfNeeded,162] - diskStorePath 'C:\Users\10117\AppData\Local\Temp' is already used by an existing CacheManager either in the same VM or in a different process.
+The diskStore path for this CacheManager will be set to C:\Users\10117\AppData\Local\Temp\ehcache_auto_created5417851855218966391diskstore.
+To avoid this warning consider using the CacheManager factory methods to create a singleton CacheManager or specifying a separate ehcache configuration (ehcache.xml) for each CacheManager instance.
+20:44:40.979 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-authCache]
+20:44:42.041 [main] INFO  c.a.d.p.DruidDataSource - [init,1002] - {dataSource-1} inited
+20:44:42.946 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [loginRecordCache]
+20:44:43.100 [main] DEBUG c.r.s.m.S.selectConfigList - [debug,135] - ==>  Preparing: select config_id, config_name, config_key, config_value, config_type, create_by, create_time, update_by, update_time, remark from sys_config
+20:44:43.388 [main] DEBUG c.r.s.m.S.selectConfigList - [debug,135] - ==> Parameters: 
+20:44:43.411 [main] DEBUG c.r.s.m.S.selectConfigList - [debug,135] - <==      Total: 11
+20:44:43.416 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-config]
+20:44:43.420 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-config]
+20:44:43.421 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-config]
+20:44:43.423 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-config]
+20:44:43.424 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-config]
+20:44:43.425 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-config]
+20:44:43.425 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-config]
+20:44:43.426 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-config]
+20:44:43.427 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-config]
+20:44:43.428 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-config]
+20:44:43.429 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-config]
+20:44:46.803 [main] INFO  c.r.s.m.s.MqttClientService - [subscribeToAllDevices,94] - 已订阅默认主题: GE_pub
+20:44:47.039 [main] INFO  c.r.s.m.s.MqttClientService - [subscribeToAllDevices,99] - 已订阅GE_pub主题
+20:44:47.039 [main] INFO  c.r.s.m.s.MqttClientService - [subscribeToAllDevices,102] - 不订阅GE_sub主题，只接收传感器响应数据
+20:44:47.041 [main] DEBUG c.r.s.m.I.selectIotDeviceList - [debug,135] - ==>  Preparing: select device_id, device_name, device_type, mqtt_pub_topic, mqtt_sub_topic, mqtt_broker, status, ip_address, last_communication, signal_strength, create_time, update_time, remark from iot_device order by create_time desc
+20:44:47.049 [main] DEBUG c.r.s.m.I.selectIotDeviceList - [debug,135] - ==> Parameters: 
+20:44:47.053 [main] DEBUG c.r.s.m.I.selectIotDeviceList - [debug,135] - <==      Total: 1
+20:44:47.055 [main] INFO  c.r.s.m.s.MqttClientService - [subscribeToAllDevices,110] - 映射主题到设备: GE_pub -> 1
+20:44:47.172 [main] DEBUG c.r.s.m.S.selectDictDataList - [debug,135] - ==>  Preparing: select dict_code, dict_sort, dict_label, dict_value, dict_type, css_class, list_class, is_default, status, create_by, create_time, remark from sys_dict_data WHERE status = ?
+20:44:47.181 [main] DEBUG c.r.s.m.S.selectDictDataList - [debug,135] - ==> Parameters: 0(String)
+20:44:47.192 [main] DEBUG c.r.s.m.S.selectDictDataList - [debug,135] - <==      Total: 29
+20:44:47.194 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-dict]
+20:44:47.195 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-dict]
+20:44:47.195 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-dict]
+20:44:47.196 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-dict]
+20:44:47.197 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-dict]
+20:44:47.199 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-dict]
+20:44:47.199 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-dict]
+20:44:47.200 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-dict]
+20:44:47.201 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-dict]
+20:44:47.203 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-dict]
+20:44:47.431 [main] INFO  o.q.i.StdSchedulerFactory - [instantiate,1220] - Using default implementation for ThreadExecutor
+20:44:47.453 [main] INFO  o.q.c.SchedulerSignalerImpl - [<init>,61] - Initialized Scheduler Signaller of type: class org.quartz.core.SchedulerSignalerImpl
+20:44:47.454 [main] INFO  o.q.c.QuartzScheduler - [<init>,229] - Quartz Scheduler v.2.3.2 created.
+20:44:47.456 [main] INFO  o.q.s.RAMJobStore - [initialize,155] - RAMJobStore initialized.
+20:44:47.457 [main] INFO  o.q.c.QuartzScheduler - [initialize,294] - Scheduler meta-data: Quartz Scheduler (v2.3.2) 'quartzScheduler' with instanceId 'NON_CLUSTERED'
+  Scheduler class: 'org.quartz.core.QuartzScheduler' - running locally.
+  NOT STARTED.
+  Currently in standby mode.
+  Number of jobs executed: 0
+  Using thread pool 'org.quartz.simpl.SimpleThreadPool' - with 10 threads.
+  Using job-store 'org.quartz.simpl.RAMJobStore' - which does not support persistence. and is not clustered.
+
+20:44:47.458 [main] INFO  o.q.i.StdSchedulerFactory - [instantiate,1374] - Quartz scheduler 'quartzScheduler' initialized from an externally provided properties instance.
+20:44:47.458 [main] INFO  o.q.i.StdSchedulerFactory - [instantiate,1378] - Quartz scheduler version: 2.3.2
+20:44:47.459 [main] INFO  o.q.c.QuartzScheduler - [setJobFactory,2293] - JobFactory set to: org.springframework.scheduling.quartz.SpringBeanJobFactory@42fcc7e6
+20:44:47.487 [main] DEBUG c.r.q.m.S.selectJobAll - [debug,135] - ==>  Preparing: select job_id, job_name, job_group, invoke_target, cron_expression, misfire_policy, concurrent, status, create_by, create_time, remark from sys_job
+20:44:47.488 [main] DEBUG c.r.q.m.S.selectJobAll - [debug,135] - ==> Parameters: 
+20:44:47.491 [main] DEBUG c.r.q.m.S.selectJobAll - [debug,135] - <==      Total: 4
+20:44:48.137 [main] INFO  o.a.s.c.e.EhCacheManager - [getCache,169] - Using existing EHCache named [sys-userCache]
+20:44:48.487 [main] INFO  o.a.c.h.Http11NioProtocol - [log,168] - Initializing ProtocolHandler ["http-nio-8080"]
+20:44:48.489 [main] INFO  o.a.c.c.StandardService - [log,168] - Starting service [Tomcat]
+20:44:48.490 [main] INFO  o.a.c.c.StandardEngine - [log,168] - Starting Servlet engine: [Apache Tomcat/9.0.106]
+20:44:48.539 [main] WARN  o.a.c.w.DirResourceSet - [log,168] - Disabled the global canonical file name cache to protect against CVE-2024-56337 when starting the WebResourceSet at [C:\Users\10117\AppData\Local\Temp\tomcat-docbase.8080.8286735497695042522] which is part of the web application []
+20:44:49.586 [main] INFO  o.a.c.c.C.[.[.[/] - [log,168] - Initializing Spring embedded WebApplicationContext
+20:44:51.118 [main] INFO  o.a.c.h.Http11NioProtocol - [log,168] - Starting ProtocolHandler ["http-nio-8080"]
+20:44:51.129 [main] WARN  o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - [refresh,599] - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Failed to start bean 'webServerStartStop'; nested exception is org.springframework.boot.web.server.PortInUseException: Port 8080 is already in use
+20:44:51.133 [main] INFO  sys-user - [shutdownAsyncManager,62] - ====关闭后台任务任务线程池====
+20:44:51.136 [main] INFO  sys-user - [shutdownEhCacheManager,75] - ====关闭缓存====
+20:44:51.161 [main] INFO  o.q.c.QuartzScheduler - [shutdown,666] - Scheduler quartzScheduler_$_NON_CLUSTERED shutting down.
+20:44:51.162 [main] INFO  o.q.c.QuartzScheduler - [standby,585] - Scheduler quartzScheduler_$_NON_CLUSTERED paused.
+20:44:51.163 [main] INFO  o.q.c.QuartzScheduler - [shutdown,740] - Scheduler quartzScheduler_$_NON_CLUSTERED shutdown complete.
+20:44:51.171 [main] INFO  c.a.d.p.DruidDataSource - [close,2204] - {dataSource-1} closing ...
+20:44:51.184 [main] INFO  c.a.d.p.DruidDataSource - [close,2277] - {dataSource-1} closed
+20:44:51.188 [main] INFO  o.a.c.h.Http11NioProtocol - [log,168] - Pausing ProtocolHandler ["http-nio-8080"]
+20:44:51.190 [main] INFO  o.a.c.c.StandardService - [log,168] - Stopping service [Tomcat]
+20:44:51.194 [main] INFO  o.a.c.h.Http11NioProtocol - [log,168] - Stopping ProtocolHandler ["http-nio-8080"]
+20:44:51.195 [main] INFO  o.a.c.h.Http11NioProtocol - [log,168] - Destroying ProtocolHandler ["http-nio-8080"]
+20:44:51.223 [main] ERROR o.s.b.d.LoggingFailureAnalysisReporter - [report,40] - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Web server failed to start. Port 8080 was already in use.
+
+Action:
+
+Identify and stop the process that's listening on port 8080 or configure this application to listen on another port.
+

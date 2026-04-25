@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.IotDataMapper">
+    
+    <resultMap type="IotData" id="IotDataResult">
+        <result property="dataId"       column="data_id"       />
+        <result property="deviceId"     column="device_id"     />
+        <result property="sensorValue"  column="sensor_value"  />
+        <result property="rawData"      column="raw_data"      />
+        <result property="dataType"     column="data_type"     />
+        <result property="unit"         column="unit"          />
+        <result property="statusCode"   column="status_code"   />
+        <result property="messageId"    column="message_id"    />
+        <result property="modbusAddress"       column="modbus_address"       />
+        <result property="modbusFunctionCode"  column="modbus_function_code" />
+        <result property="modbusDataLength"    column="modbus_data_length"   />
+        <result property="modbusCrcLow"        column="modbus_crc_low"       />
+        <result property="modbusCrcHigh"       column="modbus_crc_high"      />
+        <result property="sensorType"          column="sensor_type"          />
+        <result property="sensorValueRaw"      column="sensor_value_raw"     />
+        <result property="sensorValueCalculated" column="sensor_value_calculated" />
+        <result property="sensorUnit"          column="sensor_unit"          />
+        <result property="createTime"   column="create_time"   />
+    </resultMap>
+
+    <sql id="selectIotDataVo">
+        select data_id, device_id, sensor_value, raw_data, data_type, unit, status_code, message_id,
+               modbus_address, modbus_function_code, modbus_data_length, modbus_crc_low, modbus_crc_high,
+               sensor_type, sensor_value_raw, sensor_value_calculated, sensor_unit,
+               create_time
+        from iot_data
+    </sql>
+
+    <select id="selectIotDataList" parameterType="IotData" resultMap="IotDataResult">
+        <include refid="selectIotDataVo"/>
+        <where>  
+            <if test="deviceId != null "> and device_id = #{deviceId}</if>
+            <if test="dataType != null and dataType != ''"> and data_type = #{dataType}</if>
+            <if test="params.beginTime != null and params.beginTime != ''"><!-- 开始时间检索 -->
+                and date_format(create_time,'%y%m%d') &gt;= date_format(#{params.beginTime},'%y%m%d')
+            </if>
+            <if test="params.endTime != null and params.endTime != ''"><!-- 结束时间检索 -->
+                and date_format(create_time,'%y%m%d') &lt;= date_format(#{params.endTime},'%y%m%d')
+            </if>
+        </where>
+        order by create_time desc
+    </select>
+    
+    <select id="selectIotDataByDataId" parameterType="Long" resultMap="IotDataResult">
+        <include refid="selectIotDataVo"/>
+        where data_id = #{dataId}
+    </select>
+        
+    <insert id="insertIotData" parameterType="IotData" useGeneratedKeys="true" keyProperty="dataId">
+        insert into iot_data
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="deviceId != null">device_id,</if>
+            <if test="sensorValue != null">sensor_value,</if>
+            <if test="rawData != null">raw_data,</if>
+            <if test="dataType != null">data_type,</if>
+            <if test="unit != null">unit,</if>
+            <if test="statusCode != null">status_code,</if>
+            <if test="messageId != null">message_id,</if>
+            <if test="modbusAddress != null">modbus_address,</if>
+            <if test="modbusFunctionCode != null">modbus_function_code,</if>
+            <if test="modbusDataLength != null">modbus_data_length,</if>
+            <if test="modbusCrcLow != null">modbus_crc_low,</if>
+            <if test="modbusCrcHigh != null">modbus_crc_high,</if>
+            <if test="sensorType != null">sensor_type,</if>
+            <if test="sensorValueRaw != null">sensor_value_raw,</if>
+            <if test="sensorValueCalculated != null">sensor_value_calculated,</if>
+            <if test="sensorUnit != null">sensor_unit,</if>
+            <if test="createTime != null">create_time,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="deviceId != null">#{deviceId},</if>
+            <if test="sensorValue != null">#{sensorValue},</if>
+            <if test="rawData != null">#{rawData},</if>
+            <if test="dataType != null">#{dataType},</if>
+            <if test="unit != null">#{unit},</if>
+            <if test="statusCode != null">#{statusCode},</if>
+            <if test="messageId != null">#{messageId},</if>
+            <if test="modbusAddress != null">#{modbusAddress},</if>
+            <if test="modbusFunctionCode != null">#{modbusFunctionCode},</if>
+            <if test="modbusDataLength != null">#{modbusDataLength},</if>
+            <if test="modbusCrcLow != null">#{modbusCrcLow},</if>
+            <if test="modbusCrcHigh != null">#{modbusCrcHigh},</if>
+            <if test="sensorType != null">#{sensorType},</if>
+            <if test="sensorValueRaw != null">#{sensorValueRaw},</if>
+            <if test="sensorValueCalculated != null">#{sensorValueCalculated},</if>
+            <if test="sensorUnit != null">#{sensorUnit},</if>
+            <if test="createTime != null">#{createTime},</if>
+         </trim>
+    </insert>
+
+    <select id="selectLatestDataByDeviceId" parameterType="Long" resultMap="IotDataResult">
+        <include refid="selectIotDataVo"/>
+        where device_id = #{deviceId}
+        order by create_time desc limit 1
+    </select>
+
+    <select id="selectHistoryDataByDeviceId" resultMap="IotDataResult">
+        <include refid="selectIotDataVo"/>
+        where device_id = #{deviceId}
+        order by create_time desc
+        limit #{limit}
+    </select>
+
+    <select id="selectHistoryDataByTimeRange" resultMap="IotDataResult">
+        <include refid="selectIotDataVo"/>
+        where device_id = #{deviceId}
+        <if test="startTime != null and startTime != ''">
+            and create_time >= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            and create_time &lt;= #{endTime}
+        </if>
+        order by create_time desc
+        <if test="limit != null and limit > 0">
+            limit #{limit}
+        </if>
+    </select>
+
+    <select id="selectLatestDataByDeviceIds" resultMap="IotDataResult">
+        <include refid="selectIotDataVo"/>
+        where device_id in
+        <foreach collection="deviceIds" item="deviceId" open="(" separator="," close=")">
+            #{deviceId}
+        </foreach>
+        and (device_id, create_time) in (
+            select device_id, max(create_time) as create_time
+            from iot_data
+            where device_id in
+            <foreach collection="deviceIds" item="deviceId" open="(" separator="," close=")">
+                #{deviceId}
+            </foreach>
+            group by device_id
+        )
+        order by device_id
+    </select>
+
+    <select id="selectDataStatistics" resultType="java.util.Map">
+        select 
+            sensor_type,
+            count(*) as data_count,
+            avg(sensor_value_calculated) as avg_value,
+            min(sensor_value_calculated) as min_value,
+            max(sensor_value_calculated) as max_value,
+            max(create_time) as last_update
+        from iot_data
+        where device_id = #{deviceId}
+        and create_time >= date_sub(now(), interval #{hours} hour)
+        and sensor_type is not null
+        and sensor_value_calculated is not null
+        group by sensor_type
+    </select>
+
+</mapper>

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>个人中心 - RuoYi移动端</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 移动端样式 -->
+    <link th:href="@{/mobile/css/mobile.css}" rel="stylesheet"/>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <header class="mobile-header">
+        <div class="header-left"></div>
+        <div class="header-title">个人中心</div>
+        <div class="header-right">
+            <i class="header-action fas fa-cog" onclick="showSettings()"></i>
+        </div>
+    </header>
+    
+    <!-- 内容区域 -->
+    <main class="mobile-content">
+        <!-- 用户信息卡片 -->
+        <div class="container" style="padding-top: 0;">
+            <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                    <div style="width: 60px; height: 60px; border-radius: 50%; background: white; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                        <i class="fas fa-user" style="font-size: 30px; color: #667eea;"></i>
+                    </div>
+                    <div style="flex: 1;">
+                        <h3 style="margin: 0; font-size: 20px;" id="userName">用户名</h3>
+                        <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;" id="nickName">昵称</p>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-around; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.2);">
+                    <div style="text-align: center;">
+                        <div style="font-size: 20px; font-weight: bold;" id="deviceCount">0</div>
+                        <div style="font-size: 13px; opacity: 0.9; margin-top: 3px;">设备数</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 20px; font-weight: bold;" id="analysisCount">0</div>
+                        <div style="font-size: 13px; opacity: 0.9; margin-top: 3px;">分析次数</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 20px; font-weight: bold;" id="loginDays">0</div>
+                        <div style="font-size: 13px; opacity: 0.9; margin-top: 3px;">登录天数</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 功能菜单 -->
+        <div class="container">
+            <!-- 账户管理 -->
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-user-circle"></i> 账户管理
+                </div>
+                <div class="list-item" onclick="showUserInfo()">
+                    <div class="list-icon">
+                        <i class="fas fa-id-card" style="color: #007aff;"></i>
+                    </div>
+                    <div class="list-content">
+                        <div class="list-title">个人资料</div>
+                        <div class="list-desc">查看和编辑个人信息</div>
+                    </div>
+                    <i class="list-arrow fas fa-chevron-right"></i>
+                </div>
+                <div class="list-item" onclick="changePassword()">
+                    <div class="list-icon">
+                        <i class="fas fa-lock" style="color: #52c41a;"></i>
+                    </div>
+                    <div class="list-content">
+                        <div class="list-title">修改密码</div>
+                        <div class="list-desc">定期修改密码保护账户安全</div>
+                    </div>
+                    <i class="list-arrow fas fa-chevron-right"></i>
+                </div>
+            </div>
+            
+            <!-- 数据统计 -->
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-chart-bar"></i> 数据统计
+                </div>
+                <div class="list-item" onclick="viewDeviceStats()">
+                    <div class="list-icon" style="background: linear-gradient(135deg, #007aff, #5bacff);">
+                        <i class="fas fa-microchip" style="color: white;"></i>
+                    </div>
+                    <div class="list-content">
+                        <div class="list-title">设备统计</div>
+                        <div class="list-desc">查看设备使用情况</div>
+                    </div>
+                    <i class="list-arrow fas fa-chevron-right"></i>
+                </div>
+                <div class="list-item" onclick="viewAnalysisStats()">
+                    <div class="list-icon" style="background: linear-gradient(135deg, #52c41a, #7dd956);">
+                        <i class="fas fa-leaf" style="color: white;"></i>
+                    </div>
+                    <div class="list-content">
+                        <div class="list-title">分析统计</div>
+                        <div class="list-desc">查看植被分析记录</div>
+                    </div>
+                    <i class="list-arrow fas fa-chevron-right"></i>
+                </div>
+            </div>
+            
+            <!-- 系统设置 -->
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-cog"></i> 系统设置
+                </div>
+                <div class="list-item" onclick="showNotificationSettings()">
+                    <div class="list-icon">
+                        <i class="fas fa-bell" style="color: #faad14;"></i>
+                    </div>
+                    <div class="list-content">
+                        <div class="list-title">消息通知</div>
+                        <div class="list-desc">设置消息提醒方式</div>
+                    </div>
+                    <i class="list-arrow fas fa-chevron-right"></i>
+                </div>
+                <div class="list-item" onclick="showLanguageSettings()">
+                    <div class="list-icon">
+                        <i class="fas fa-language" style="color: #9c27b0;"></i>
+                    </div>
+                    <div class="list-content">
+                        <div class="list-title">语言设置</div>
+                        <div class="list-desc">简体中文</div>
+                    </div>
+                    <i class="list-arrow fas fa-chevron-right"></i>
+                </div>
+                <div class="list-item" onclick="clearCache()">
+                    <div class="list-icon">
+                        <i class="fas fa-trash-alt" style="color: #ff5722;"></i>
+                    </div>
+                    <div class="list-content">
+                        <div class="list-title">清除缓存</div>
+                        <div class="list-desc">清除本地缓存数据</div>
+                    </div>
+                    <i class="list-arrow fas fa-chevron-right"></i>
+                </div>
+            </div>
+            
+            <!-- 关于 -->
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-info-circle"></i> 关于
+                </div>
+                <div class="list-item" onclick="showAbout()">
+                    <div class="list-icon">
+                        <i class="fas fa-mobile-alt" style="color: #00bcd4;"></i>
+                    </div>
+                    <div class="list-content">
+                        <div class="list-title">关于应用</div>
+                        <div class="list-desc">版本 1.0.0</div>
+                    </div>
+                    <i class="list-arrow fas fa-chevron-right"></i>
+                </div>
+                <div class="list-item" onclick="showHelp()">
+                    <div class="list-icon">
+                        <i class="fas fa-question-circle" style="color: #607d8b;"></i>
+                    </div>
+                    <div class="list-content">
+                        <div class="list-title">帮助中心</div>
+                        <div class="list-desc">常见问题与使用帮助</div>
+                    </div>
+                    <i class="list-arrow fas fa-chevron-right"></i>
+                </div>
+            </div>
+            
+            <!-- 退出登录按钮 -->
+            <button class="btn btn-danger btn-block btn-large" onclick="logout()" style="margin: 20px 0;">
+                <i class="fas fa-sign-out-alt"></i> 退出登录
+            </button>
+        </div>
+    </main>
+    
+    <!-- 底部导航 -->
+    <nav class="mobile-footer">
+        <a class="footer-item" href="/m/index">
+            <i class="footer-icon fas fa-home"></i>
+            <span>首页</span>
+        </a>
+        <a class="footer-item" href="/m/device/list">
+            <i class="footer-icon fas fa-microchip"></i>
+            <span>设备</span>
+        </a>
+        <a class="footer-item" href="/m/vegetation/list">
+            <i class="footer-icon fas fa-leaf"></i>
+            <span>植被</span>
+        </a>
+        <a class="footer-item active" href="/m/profile">
+            <i class="footer-icon fas fa-user"></i>
+            <span>我的</span>
+        </a>
+    </nav>
+    
+    <!-- jQuery -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    
+    <!-- 移动端JS -->
+    <script th:src="@{/mobile/js/mobile.js}"></script>
+    
+    <script>
+    $(function() {
+        // 检查登录
+        if (!checkLogin()) return;
+        
+        // 加载用户信息
+        loadUserInfo();
+        
+        // 加载统计数据
+        loadStatistics();
+    });
+    
+    // 加载用户信息
+    async function loadUserInfo() {
+        try {
+            const result = await API.getUserInfo();
+            
+            if (result.code === 200 && result.user) {
+                const user = result.user;
+                $('#userName').text(user.userName || user.loginName || '用户');
+                $('#nickName').text(user.nickName || user.userName || '欢迎使用');
+            }
+        } catch (error) {
+            console.error('Load user info error:', error);
+        }
+    }
+    
+    // 加载统计数据
+    async function loadStatistics() {
+        try {
+            // 加载设备统计
+            const deviceStats = await API.getDeviceStatistics();
+            if (deviceStats.code === 200) {
+                $('#deviceCount').text(deviceStats.total || 0);
+            }
+            
+            // 加载植被分析统计
+            const vegStats = await API.getVegetationStatistics();
+            if (vegStats.code === 200) {
+                $('#analysisCount').text(vegStats.totalCount || 0);
+            }
+            
+            // 登录天数（模拟数据）
+            $('#loginDays').text(Math.floor(Math.random() * 30) + 1);
+        } catch (error) {
+            console.error('Load statistics error:', error);
+        }
+    }
+    
+    // 显示用户信息
+    function showUserInfo() {
+        showToast('功能开发中...');
+        // TODO: 跳转到个人资料页面
+    }
+    
+    // 修改密码
+    function changePassword() {
+        showToast('功能开发中...');
+        // TODO: 打开修改密码对话框
+    }
+    
+    // 查看设备统计
+    function viewDeviceStats() {
+        window.location.href = '/m/device/list';
+    }
+    
+    // 查看分析统计
+    function viewAnalysisStats() {
+        window.location.href = '/m/vegetation/list';
+    }
+    
+    // 消息通知设置
+    function showNotificationSettings() {
+        showToast('功能开发中...');
+    }
+    
+    // 语言设置
+    function showLanguageSettings() {
+        showToast('当前仅支持简体中文');
+    }
+    
+    // 清除缓存
+    function clearCache() {
+        if (confirm('确定要清除缓存吗？')) {
+            // 清除除了token和user之外的缓存
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            localStorage.clear();
+            
+            if (token) localStorage.setItem('token', token);
+            if (user) localStorage.setItem('user', user);
+            
+            showToast('缓存已清除');
+        }
+    }
+    
+    // 显示设置
+    function showSettings() {
+        showToast('设置功能开发中...');
+    }
+    
+    // 关于应用
+    function showAbout() {
+        alert('RuoYi IoT 移动端\n\n版本: 1.0.0\n\n智慧农业管理系统移动客户端\n支持设备管理和植被分析功能');
+    }
+    
+    // 帮助中心
+    function showHelp() {
+        alert('帮助中心\n\n常见问题:\n1. 如何添加设备？\n2. 如何进行植被分析？\n3. 如何查看历史记录？\n\n更多帮助请联系管理员');
+    }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,53 @@
+# 移动端生产环境配置
+server:
+  port: 8080
+  servlet:
+    context-path: /
+  # HTTPS配置 (生产环境需要配置)
+  # ssl:
+  #   key-store: classpath:keystore.p12
+  #   key-store-password: password
+  #   key-store-type: PKCS12
+  #   key-alias: tomcat
+
+# 移动端特定配置
+mobile:
+  # 允许的域名
+  allowedOrigins: 
+    - "http://localhost:8100"  # Ionic开发服务器
+    - "https://yourdomain.com" # 生产域名
+    - "capacitor://localhost"  # Capacitor本地访问
+    - "ionic://localhost"      # Ionic本地访问
+  # API版本
+  apiVersion: v1
+  # 文件上传限制
+  upload:
+    maxFileSize: 10MB
+    allowedTypes: 
+      - image/jpeg
+      - image/png
+      - image/gif
+
+# 安全配置
+security:
+  # 跨域配置
+  cors:
+    allowed-origins: "*"
+    allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
+    allowed-headers: "*"
+    allow-credentials: true
+    max-age: 3600
+  
+  # JWT配置
+  jwt:
+    secret: ${JWT_SECRET:ruoyiMobileSecret2024}
+    expiration: 604800 # 7天
+    refresh-expiration: 1209600 # 14天
+
+# 日志配置
+logging:
+  level:
+    com.ruoyi: info
+    org.springframework.security: debug
+    org.springframework.web.cors: debug
+

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>设备详情 - RuoYi移动端</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 移动端样式 -->
+    <link th:href="@{/mobile/css/mobile.css}" rel="stylesheet"/>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <header class="mobile-header">
+        <div class="header-left">
+            <i class="back-btn fas fa-arrow-left"></i>
+        </div>
+        <div class="header-title">设备详情</div>
+        <div class="header-right">
+            <i class="header-action fas fa-edit" onclick="editDevice()"></i>
+        </div>
+    </header>
+    
+    <!-- 内容区域 -->
+    <main class="mobile-content" style="padding-bottom: 20px;">
+        <div class="container">
+            <!-- 设备基本信息 -->
+            <div class="card">
+                <div class="card-title">
+                    <div>
+                        <i class="fas fa-microchip"></i> 基本信息
+                    </div>
+                    <span id="statusBadge" class="badge">-</span>
+                </div>
+                <div class="card-content">
+                    <div style="margin-bottom: 15px;">
+                        <div style="color: #999; font-size: 13px; margin-bottom: 5px;">设备名称</div>
+                        <div style="font-size: 16px; font-weight: 500;" id="deviceName">-</div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <div style="color: #999; font-size: 13px; margin-bottom: 5px;">设备类型</div>
+                        <div style="font-size: 15px;" id="deviceType">-</div>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <div style="color: #999; font-size: 13px; margin-bottom: 5px;">设备位置</div>
+                        <div style="font-size: 15px;" id="location">-</div>
+                    </div>
+                    <div>
+                        <div style="color: #999; font-size: 13px; margin-bottom: 5px;">最后更新时间</div>
+                        <div style="font-size: 15px;" id="lastUpdateTime">-</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 土壤传感器数据 -->
+            <div class="card" id="soilDataCard" style="display: none;">
+                <div class="card-title">
+                    <i class="fas fa-seedling"></i> 土壤传感器数据
+                </div>
+                <div class="card-content">
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                        <div style="text-align: center; padding: 12px; background: #f5f5f5; border-radius: 8px;">
+                            <div style="font-size: 18px; font-weight: bold; color: #4169E1;" id="soilMoisture">-</div>
+                            <div style="color: #999; font-size: 12px; margin-top: 5px;">土壤湿度(%)</div>
+                        </div>
+                        <div style="text-align: center; padding: 12px; background: #f5f5f5; border-radius: 8px;">
+                            <div style="font-size: 18px; font-weight: bold; color: #FF6347;" id="soilTemp">-</div>
+                            <div style="color: #999; font-size: 12px; margin-top: 5px;">土壤温度(℃)</div>
+                        </div>
+                        <div style="text-align: center; padding: 12px; background: #f5f5f5; border-radius: 8px;">
+                            <div style="font-size: 18px; font-weight: bold; color: #FFA500;" id="soilEC">-</div>
+                            <div style="color: #999; font-size: 12px; margin-top: 5px;">电导率(μS/cm)</div>
+                        </div>
+                        <div style="text-align: center; padding: 12px; background: #f5f5f5; border-radius: 8px;">
+                            <div style="font-size: 18px; font-weight: bold; color: #9370DB;" id="soilPh">-</div>
+                            <div style="color: #999; font-size: 12px; margin-top: 5px;">PH值</div>
+                        </div>
+                        <div style="text-align: center; padding: 12px; background: #f5f5f5; border-radius: 8px;">
+                            <div style="font-size: 18px; font-weight: bold; color: #52c41a;" id="soilN">-</div>
+                            <div style="color: #999; font-size: 12px; margin-top: 5px;">氮含量(mg/kg)</div>
+                        </div>
+                        <div style="text-align: center; padding: 12px; background: #f5f5f5; border-radius: 8px;">
+                            <div style="font-size: 18px; font-weight: bold; color: #faad14;" id="soilP">-</div>
+                            <div style="color: #999; font-size: 12px; margin-top: 5px;">磷含量(mg/kg)</div>
+                        </div>
+                        <div style="text-align: center; padding: 12px; background: #f5f5f5; border-radius: 8px;">
+                            <div style="font-size: 18px; font-weight: bold; color: #1E90FF;" id="soilK">-</div>
+                            <div style="color: #999; font-size: 12px; margin-top: 5px;">钾含量(mg/kg)</div>
+                        </div>
+                        <div style="text-align: center; padding: 12px; background: #f5f5f5; border-radius: 8px;">
+                            <div style="font-size: 18px; font-weight: bold; color: #DC143C;" id="soilSalinity">-</div>
+                            <div style="color: #999; font-size: 12px; margin-top: 5px;">盐度(‰)</div>
+                        </div>
+                        <div style="text-align: center; padding: 12px; background: #f5f5f5; border-radius: 8px;">
+                            <div style="font-size: 18px; font-weight: bold; color: #20B2AA;" id="soilTDS">-</div>
+                            <div style="color: #999; font-size: 12px; margin-top: 5px;">TDS(mg/L)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 地力综合评价 -->
+            <div class="card" id="fertilityCard" style="display: none;">
+                <div class="card-title">
+                    <i class="fas fa-leaf"></i> 天然打草场地力综合评价
+                        </div>
+                <div class="card-content">
+                    <div style="text-align: center; padding: 20px;">
+                        <div style="font-size: 48px; font-weight: bold;" id="fertilityIndex">0.00</div>
+                        <div style="color: #666; margin-top: 10px;">综合地力指数</div>
+                        </div>
+                    
+                    <div style="text-align: center; padding: 15px; background: #f5f5f5; border-radius: 8px; margin-top: 15px;">
+                        <div style="font-size: 24px; font-weight: bold;" id="fertilityLevel">-</div>
+                        <div style="color: #999; font-size: 13px; margin-top: 5px;">地力等级</div>
+                        </div>
+                    
+                    <div style="margin-top: 15px; padding: 15px; background: #e6f7ff; border-radius: 8px; border-left: 3px solid #007aff;">
+                        <div style="color: #666; font-size: 13px;">
+                            <i class="fas fa-lightbulb"></i>
+                            <strong>评价依据：</strong>基于《天然打草场地力综合评价标准》
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 数据图表链接 -->
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-chart-area"></i> 数据分析
+                </div>
+                <div class="card-content">
+                    <button class="btn btn-primary btn-block" onclick="viewCharts()">
+                        <i class="fas fa-chart-line"></i> 查看数据波形图
+                    </button>
+                    <p style="font-size: 13px; color: #999; margin-top: 10px; margin-bottom: 0; text-align: center;">
+                        查看温度、湿度等数据的历史曲线图
+                    </p>
+                </div>
+            </div>
+            
+            <!-- 设备状态历史 -->
+            <div class="card">
+                <div class="card-title">
+                    <i class="fas fa-history"></i> 状态历史
+                </div>
+                <div id="statusHistory">
+                    <div class="empty-state" style="padding: 30px 20px;">
+                        <i class="fas fa-clock empty-icon"></i>
+                        <p class="empty-text">暂无历史记录</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px;">
+                <button class="btn btn-primary" onclick="controlDevice()">
+                    <i class="fas fa-power-off"></i> 设备控制
+                </button>
+                <button class="btn btn-warning" onclick="editDevice()">
+                    <i class="fas fa-edit"></i> 编辑信息
+                </button>
+            </div>
+        </div>
+    </main>
+    
+    <!-- 底部导航 -->
+    <nav class="mobile-footer">
+        <a class="footer-item" href="/m/index">
+            <i class="footer-icon fas fa-home"></i>
+            <span>首页</span>
+        </a>
+        <a class="footer-item active" href="/m/device/list">
+            <i class="footer-icon fas fa-microchip"></i>
+            <span>设备</span>
+        </a>
+        <a class="footer-item" href="/m/vegetation/list">
+            <i class="footer-icon fas fa-leaf"></i>
+            <span>植被</span>
+        </a>
+        <a class="footer-item" href="/m/profile">
+            <i class="footer-icon fas fa-user"></i>
+            <span>我的</span>
+        </a>
+    </nav>
+    
+    <!-- jQuery -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    
+    <!-- 移动端JS -->
+    <script th:src="@{/mobile/js/mobile.js}"></script>
+    
+    <script>
+    let deviceId = null;
+    let deviceData = null;
+    
+    $(function() {
+        // 检查登录
+        if (!checkLogin()) return;
+        
+        // 获取设备ID
+        const urlParams = new URLSearchParams(window.location.search);
+        deviceId = urlParams.get('id');
+        
+        if (!deviceId) {
+            showToast('设备ID不能为空');
+            setTimeout(() => {
+                window.location.href = '/m/device/list';
+            }, 1500);
+            return;
+        }
+        
+        // 加载设备详情
+        loadDeviceDetail();
+    });
+    
+    // 加载设备详情
+    async function loadDeviceDetail() {
+        try {
+            showLoading('加载中...');
+            
+            const result = await API.getDeviceDetail(deviceId);
+            
+            if (result && (result.code === 0 || result.code === 200) && result.data) {
+                deviceData = result.data;
+                // ⚠️ 重要：将latestData附加到deviceData上，因为API返回的latestData在result根级别
+                if (result.latestData) {
+                    deviceData.latestData = result.latestData;
+                    console.log('✅ latestData已附加:', result.latestData);
+                } else {
+                    console.warn('⚠️ API返回中没有latestData');
+                }
+                displayDeviceInfo(deviceData);
+            } else {
+                showToast(result.msg || '加载失败');
+                setTimeout(() => {
+                    window.location.href = '/m/device/list';
+                }, 1500);
+            }
+            
+            hideLoading();
+        } catch (error) {
+            hideLoading();
+            console.error('Load device detail error:', error);
+            showToast('加载失败，请检查网络');
+        }
+    }
+    
+    // 显示设备信息
+    function displayDeviceInfo(device) {
+        console.log('📊 开始显示设备信息:', device);
+        
+        // 基本信息
+        $('#deviceName').text(device.deviceName || '-');
+        $('#deviceType').text(device.deviceType || '-');
+        $('#location').text(device.remark || '-');
+        $('#lastUpdateTime').text(formatDate(device.createTime) || '-');
+        
+        // 状态徽章
+        const isOnline = device.status == '1' || device.status == '0';
+        const statusBadge = $('#statusBadge');
+        statusBadge.removeClass('badge-success badge-danger');
+        statusBadge.addClass(isOnline ? 'badge-success' : 'badge-danger');
+        statusBadge.text(isOnline ? '正常' : '停用');
+        
+        // 解析最新传感器数据
+        console.log('🔍 检查latestData:', device.latestData);
+        if (device.latestData && device.latestData.rawData) {
+            console.log('✅ 找到rawData:', device.latestData.rawData);
+            const registers = parseModbusData(device.latestData.rawData);
+            console.log('📈 解析后的寄存器:', registers);
+            if (registers && registers.length >= 9) {
+                // 计算温度（需要补码处理，参考PC端waveform.html）
+                const temperature = calcTemperature(registers[1]);
+                const humidity = registers[0] / 10;
+                
+                console.log('🌡️ 温度:', temperature.toFixed(1), '💧 湿度:', humidity.toFixed(1));
+                
+                // 显示土壤传感器数据（完全参考PC端waveform.html的解析规则）
+                $('#soilMoisture').text(humidity.toFixed(1));  // 寄存器0: 湿度 ÷10
+                $('#soilTemp').text(temperature.toFixed(1));   // 寄存器1: 温度（补码处理后÷10）
+                $('#soilEC').text(registers[2].toFixed(0));    // 寄存器2: 电导率（直接显示）
+                $('#soilPh').text((registers[3] / 10).toFixed(1)); // 寄存器3: PH值 ÷10 (不是÷100!)
+                $('#soilN').text(registers[4].toFixed(0));     // 寄存器4: 氮含量
+                $('#soilP').text(registers[5].toFixed(0));     // 寄存器5: 磷含量
+                $('#soilK').text(registers[6].toFixed(0));     // 寄存器6: 钾含量
+                $('#soilSalinity').text((registers[7] / 10).toFixed(1)); // 寄存器7: 盐度 ÷10
+                $('#soilTDS').text(registers[8].toFixed(0));   // 寄存器8: TDS（直接显示）
+                
+                console.log('✅ 所有传感器数据已显示');
+                $('#soilDataCard').show();
+                
+                // 计算地力指数
+                console.log('🌱 开始计算地力指数...');
+                calculateFertility(registers);
+            }
+        }
+    }
+    
+        // 计算地力综合指数（基于天然打草场地力综合评价标准）
+        function calculateFertility(registers) {
+            try {
+                // 解析传感器数据（按照PC端waveform.html的解析规则）
+                const moisture = registers[0] / 10;   // 寄存器0: 土壤湿度 ÷10 (%)
+                const temperature = calcTemperature(registers[1]); // 寄存器1: 温度（补码处理）
+                const ec = registers[2];              // 寄存器2: 电导率 (μS/cm)
+                const ph = registers[3] / 10;         // 寄存器3: PH值 ÷10 (不是÷100!)
+                const nitrogen = registers[4];        // 寄存器4: 氮含量 (mg/kg)
+                const phosphorus = registers[5];      // 寄存器5: 磷含量 (mg/kg)
+                const potassium = registers[6];       // 寄存器6: 钾含量 (mg/kg)
+                const salinity = registers[7] / 10;   // 寄存器7: 盐度 ÷10 (‰)
+                const tds = registers[8];             // 寄存器8: TDS (mg/L)
+            
+            // 计算各项得分
+            const organicScore = calculateOrganicScore(moisture, nitrogen);
+            const textureScore = calculateTextureScore(ec, tds);
+            const phScore = calculatePhScore(ph);
+            const salinityScore = calculateSalinityScore(salinity);
+            
+            // 计算综合地力指数 P = Σ(Ci × Fi)
+            const fertilityIndex = (organicScore * 0.6) + (textureScore * 0.3) + 
+                                  (phScore * 0.05) + (salinityScore * 0.05);
+            
+            // 确定地力等级
+            const level = determineFertilityLevel(fertilityIndex);
+            
+            // 显示结果
+            $('#fertilityIndex').text(fertilityIndex.toFixed(2));
+            $('#fertilityIndex').css('color', level.color);
+            $('#fertilityLevel').text(level.name);
+            $('#fertilityLevel').css('color', level.color);
+            $('#fertilityCard').show();
+            
+        } catch (error) {
+            console.error('地力计算失败:', error);
+        }
+    }
+    
+    // 有机质得分计算
+    function calculateOrganicScore(moisture, nitrogen) {
+        let moistureScore = 0;
+        if (moisture >= 20 && moisture <= 40) moistureScore = 1.0;
+        else if (moisture >= 15 && moisture < 20) moistureScore = 0.8;
+        else if (moisture >= 10 && moisture < 15) moistureScore = 0.6;
+        else if (moisture > 40 && moisture <= 50) moistureScore = 0.8;
+        else moistureScore = 0.4;
+        
+        let nitrogenScore = 0;
+        if (nitrogen >= 100 && nitrogen <= 300) nitrogenScore = 1.0;
+        else if (nitrogen >= 50 && nitrogen < 100) nitrogenScore = 0.8;
+        else if (nitrogen < 50) nitrogenScore = 0.6;
+        else if (nitrogen > 300 && nitrogen <= 500) nitrogenScore = 0.8;
+        else nitrogenScore = 0.6;
+        
+        return (moistureScore + nitrogenScore) / 2;
+    }
+    
+    // 土壤质地得分计算
+    function calculateTextureScore(ec, tds) {
+        let ecScore = 0;
+        if (ec >= 200 && ec <= 800) ecScore = 1.0;
+        else if (ec >= 100 && ec < 200) ecScore = 0.8;
+        else if (ec < 100) ecScore = 0.6;
+        else if (ec > 800 && ec <= 1200) ecScore = 0.8;
+        else ecScore = 0.6;
+        
+        let tdsScore = 0;
+        if (tds >= 100 && tds <= 500) tdsScore = 1.0;
+        else if (tds >= 50 && tds < 100) tdsScore = 0.8;
+        else if (tds < 50) tdsScore = 0.6;
+        else if (tds > 500 && tds <= 800) tdsScore = 0.8;
+        else tdsScore = 0.6;
+        
+        return (ecScore + tdsScore) / 2;
+    }
+    
+    // PH值得分计算
+    function calculatePhScore(ph) {
+        if (ph >= 6.0 && ph <= 7.5) return 1.0;
+        else if (ph >= 5.5 && ph < 6.0) return 0.8;
+        else if (ph > 7.5 && ph <= 8.0) return 0.8;
+        else if (ph >= 5.0 && ph < 5.5) return 0.6;
+        else if (ph > 8.0 && ph <= 8.5) return 0.6;
+        else return 0.4;
+    }
+    
+    // 含盐量得分计算
+    function calculateSalinityScore(salinity) {
+        if (salinity >= 0 && salinity <= 2) return 1.0;
+        else if (salinity > 2 && salinity <= 3) return 0.8;
+        else if (salinity > 3 && salinity <= 5) return 0.6;
+        else return 0.4;
+    }
+    
+    // 确定地力等级
+    function determineFertilityLevel(index) {
+        if (index > 0.9) return { name: '一级（高）', color: '#1ab394' };
+        else if (index >= 0.8) return { name: '二级（较高）', color: '#1ab394' };
+        else if (index >= 0.6) return { name: '三级（中）', color: '#f0ad4e' };
+        else if (index >= 0.4) return { name: '四级（较低）', color: '#d9534f' };
+        else return { name: '五级（低）', color: '#d9534f' };
+    }
+    
+    // 温度补码处理（完全参考PC端waveform.html的calcTemperature函数）
+    function calcTemperature(raw) {
+        // 补码处理：如果是负数（最高位为1），转换为负值
+        if (raw > 0x7FFF) {
+            raw = raw - 0x10000;
+        }
+        return raw / 10.0;
+    }
+    
+    // 解析Modbus数据（完全参考PC端waveform.html的parseModbusFrameFromRaw函数）
+    function parseModbusData(rawData) {
+        try {
+            if (!rawData) return null;
+            
+            // 移除0x前缀和空格，转大写
+            let hex = rawData.replace(/0x/gi, '').replace(/\s+/g, '').toUpperCase();
+            
+            // 基本验证
+            if (!/^[0-9A-F]+$/.test(hex) || hex.length < 12) return null;
+            
+            // 解析功能码
+            const functionCode = parseInt(hex.substr(2, 2), 16);
+            
+            // 只处理0x03读保持寄存器
+            if (functionCode === 0x03) {
+                const byteCount = parseInt(hex.substr(4, 2), 16);
+                const dataStart = 6;
+                const dataEnd = dataStart + byteCount * 2; // byteCount是字节数，hex中每字节占2个字符
+                const dataHex = hex.substring(dataStart, dataEnd);
+                const registers = [];
+                
+                // 每个寄存器占4个十六进制字符（2字节）
+                for (let i = 0; i + 4 <= dataHex.length; i += 4) {
+                    registers.push(parseInt(dataHex.substr(i, 4), 16));
+                }
+                
+                return registers;
+            }
+            
+            return null;
+        } catch (error) {
+            console.error('Modbus数据解析失败:', error);
+            return null;
+        }
+    }
+    
+    // 刷新数据
+    async function refreshData() {
+        showToast('刷新中...');
+        await loadDeviceDetail();
+        showToast('刷新成功');
+    }
+    
+    // 设备控制
+    function controlDevice() {
+        if (!deviceData) return;
+        
+        const isOnline = deviceData.status == '1';
+        const action = isOnline ? '关闭' : '开启';
+        
+        if (confirm(`确定要${action}设备吗？`)) {
+            showToast('功能开发中...');
+            // TODO: 实现设备控制功能
+        }
+    }
+    
+    // 编辑设备
+    function editDevice() {
+        showToast('功能开发中...');
+        // TODO: 跳转到编辑页面或打开编辑对话框
+    }
+    
+    // 查看图表
+    function viewCharts() {
+        if (!deviceId) {
+            showToast('设备ID不能为空');
+            return;
+        }
+        // 跳转到PC端的波形图页面（在新窗口打开）
+        window.open('/system/iot/waveform?deviceId=' + deviceId, '_blank');
+    }
+    </script>
+</body>
+</html>
+
+

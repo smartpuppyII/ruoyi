@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>植被分析测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1ab394;
+            text-align: center;
+        }
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .mode-btn {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e7eaec;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        .mode-btn.active {
+            background: #1ab394;
+            color: white;
+            border-color: #1ab394;
+        }
+        .mode-btn:hover {
+            border-color: #1ab394;
+        }
+        .upload-panel {
+            display: none;
+            margin-top: 20px;
+        }
+        .upload-panel.active {
+            display: block;
+        }
+        #camera-video {
+            width: 100%;
+            max-width: 640px;
+            border: 2px solid #e7eaec;
+            border-radius: 4px;
+            display: block;
+            margin: 0 auto;
+        }
+        .preview-image {
+            max-width: 100%;
+            max-height: 400px;
+            display: block;
+            margin: 20px auto;
+            border: 2px solid #e7eaec;
+            border-radius: 4px;
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background: #1ab394;
+            color: white;
+        }
+        .btn-success {
+            background: #1c84c6;
+            color: white;
+        }
+        .btn-warning {
+            background: #f8ac59;
+            color: white;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e7eaec;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .result-panel {
+            background: #f3f3f4;
+            padding: 20px;
+            border-radius: 4px;
+            margin-top: 20px;
+            display: none;
+        }
+        .result-panel.show {
+            display: block;
+        }
+        .coverage-display {
+            font-size: 64px;
+            font-weight: bold;
+            color: #1ab394;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .result-item {
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        .result-item strong {
+            display: inline-block;
+            width: 150px;
+        }
+        .camera-controls {
+            text-align: center;
+            margin-top: 15px;
+        }
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .alert-info {
+            background: #d9edf7;
+            color: #31708f;
+            border: 1px solid #bce8f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌿 植被覆盖率分析测试</h1>
+        
+        <div class="alert alert-info">
+            <strong>提示：</strong>此页面用于测试植被分析功能。请确保后端服务已启动（端口8080）。
+        </div>
+
+        <div class="form-group">
+            <label>设备ID（可选）：</label>
+            <input type="text" id="deviceId" placeholder="输入设备ID，用于关联IoT设备">
+        </div>
+
+        <div class="mode-selector">
+            <button class="mode-btn active" onclick="switchMode('file')">
+                📁 本地文件上传
+            </button>
+            <button class="mode-btn" onclick="switchMode('camera')">
+                📷 拍照上传
+            </button>
+        </div>
+
+        <!-- 本地文件上传 -->
+        <div class="upload-panel active" id="file-panel">
+            <div class="form-group">
+                <label>选择图片：</label>
+                <input type="file" id="file-input" accept="image/jpeg,image/jpg,image/png" onchange="previewFile()">
+            </div>
+            <img id="file-preview" class="preview-image" style="display:none;">
+        </div>
+
+        <!-- 拍照上传 -->
+        <div class="upload-panel" id="camera-panel">
+            <video id="camera-video" autoplay playsinline></video>
+            <canvas id="camera-canvas" style="display:none;"></canvas>
+            <img id="camera-preview" class="preview-image" style="display:none;">
+            
+            <div class="camera-controls">
+                <button class="btn btn-success" id="start-camera" onclick="startCamera()">启动摄像头</button>
+                <button class="btn btn-primary" id="capture-btn" onclick="capturePhoto()" style="display:none;">拍照</button>
+                <button class="btn btn-warning" id="stop-camera" onclick="stopCamera()" style="display:none;">停止摄像头</button>
+            </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="btn btn-primary" onclick="analyzeImage()" style="font-size: 18px; padding: 15px 40px;">
+                ▶ 开始分析
+            </button>
+            <button class="btn btn-warning" onclick="reset()">
+                🔄 重置
+            </button>
+        </div>
+
+        <!-- 分析结果 -->
+        <div class="result-panel" id="result-panel">
+            <h2 style="text-align: center; color: #1ab394;">分析结果</h2>
+            <div class="coverage-display" id="coverage-display">--</div>
+            <div class="result-item">
+                <strong>图片名称：</strong>
+                <span id="result-image-name">--</span>
+            </div>
+            <div class="result-item">
+                <strong>绿色像素：</strong>
+                <span id="result-green-pixels">--</span>
+            </div>
+            <div class="result-item">
+                <strong>总像素：</strong>
+                <span id="result-total-pixels">--</span>
+            </div>
+            <div class="result-item">
+                <strong>分析时间：</strong>
+                <span id="result-analysis-time">--</span>
+            </div>
+            <div class="result-item">
+                <strong>设备ID：</strong>
+                <span id="result-device-id">--</span>
+            </div>
+            <div class="result-item">
+                <strong>备注：</strong>
+                <span id="result-remark">--</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'file';
+        let cameraStream = null;
+        let capturedBlob = null;
+
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // 更新按钮状态
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // 切换面板
+            document.querySelectorAll('.upload-panel').forEach(panel => panel.classList.remove('active'));
+            document.getElementById(mode + '-panel').classList.add('active');
+            
+            // 停止摄像头
+            if (mode === 'file' && cameraStream) {
+                stopCamera();
+            }
+            
+            // 隐藏结果
+            document.getElementById('result-panel').classList.remove('show');
+        }
+
+        function previewFile() {
+            const file = document.getElementById('file-input').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('file-preview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: 'environment'
+                    } 
+                });
+                
+                cameraStream = stream;
+                const video = document.getElementById('camera-video');
+                video.srcObject = stream;
+                
+                document.getElementById('start-camera').style.display = 'none';
+                document.getElementById('capture-btn').style.display = 'inline-block';
+                document.getElementById('stop-camera').style.display = 'inline-block';
+                document.getElementById('camera-preview').style.display = 'none';
+                
+                alert('摄像头已启动！');
+            } catch (err) {
+                alert('摄像头启动失败：' + err.message);
+            }
+        }
+
+        function stopCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+                
+                const video = document.getElementById('camera-video');
+                video.srcObject = null;
+                
+                document.getElementById('start-camera').style.display = 'inline-block';
+                document.getElementById('capture-btn').style.display = 'none';
+                document.getElementById('stop-camera').style.display = 'none';
+            }
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('camera-video');
+            const canvas = document.getElementById('camera-canvas');
+            const context = canvas.getContext('2d');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0);
+            
+            canvas.toBlob(function(blob) {
+                capturedBlob = blob;
+                
+                const url = URL.createObjectURL(blob);
+                const preview = document.getElementById('camera-preview');
+                preview.src = url;
+                preview.style.display = 'block';
+                
+                stopCamera();
+                alert('拍照成功！点击"开始分析"进行植被覆盖率分析。');
+            }, 'image/jpeg', 0.95);
+        }
+
+        async function analyzeImage() {
+            const formData = new FormData();
+            const deviceId = document.getElementById('deviceId').value;
+            
+            if (currentMode === 'file') {
+                const fileInput = document.getElementById('file-input');
+                if (!fileInput.files || !fileInput.files[0]) {
+                    alert('请先选择图片文件！');
+                    return;
+                }
+                formData.append('file', fileInput.files[0]);
+            } else {
+                if (!capturedBlob) {
+                    alert('请先拍照！');
+                    return;
+                }
+                formData.append('file', capturedBlob, 'camera-photo.jpg');
+            }
+            
+            if (deviceId) {
+                formData.append('deviceId', deviceId);
+            }
+            
+            try {
+                const response = await fetch('http://localhost:8080/system/vegetation/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.code === 0) {
+                    displayResult(result.data);
+                    alert('分析完成！');
+                } else {
+                    alert('分析失败：' + (result.msg || '未知错误'));
+                }
+            } catch (error) {
+                alert('请求失败：' + error.message + '\n\n请确保后端服务已启动（http://localhost:8080）');
+            }
+        }
+
+        function displayResult(data) {
+            document.getElementById('coverage-display').textContent = data.coverageRate.toFixed(2) + '%';
+            document.getElementById('result-image-name').textContent = data.imageName || '--';
+            document.getElementById('result-green-pixels').textContent = formatNumber(data.greenPixelCount);
+            document.getElementById('result-total-pixels').textContent = formatNumber(data.totalPixelCount);
+            document.getElementById('result-analysis-time').textContent = formatDateTime(data.analysisTime);
+            document.getElementById('result-device-id').textContent = data.deviceId || '未关联';
+            document.getElementById('result-remark').textContent = data.remark || '--';
+            
+            document.getElementById('result-panel').classList.add('show');
+            
+            // 滚动到结果
+            document.getElementById('result-panel').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function formatNumber(num) {
+            return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '0';
+        }
+
+        function formatDateTime(dateStr) {
+            if (!dateStr) return '--';
+            const date = new Date(dateStr);
+            return date.toLocaleString('zh-CN');
+        }
+
+        function reset() {
+            document.getElementById('deviceId').value = '';
+            document.getElementById('file-input').value = '';
+            document.getElementById('file-preview').style.display = 'none';
+            document.getElementById('camera-preview').style.display = 'none';
+            capturedBlob = null;
+            stopCamera();
+            document.getElementById('result-panel').classList.remove('show');
+        }
+    </script>
+</body>
+</html>
+
+
+

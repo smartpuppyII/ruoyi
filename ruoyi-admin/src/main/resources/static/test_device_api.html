@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设备接口测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 3px; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>🔧 设备接口测试页面</h1>
+    
+    <div class="test-section">
+        <h3>1. 测试设备列表接口</h3>
+        <button onclick="testDeviceListAPI()">测试设备列表API</button>
+        <div id="deviceApiTest" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. 测试植被分析页面</h3>
+        <p>
+            <a href="http://localhost:8080/system/vegetation" target="_blank">🌱 访问植被分析页面</a>
+        </p>
+        <p>
+            <a href="http://localhost:8080/system/vegetation/add" target="_blank">➕ 访问添加页面</a>
+        </p>
+    </div>
+
+    <div class="test-section">
+        <h3>3. 测试设备管理页面</h3>
+        <p>
+            <a href="http://localhost:8080/system/iotdevice" target="_blank">📱 访问设备管理页面</a>
+        </p>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:8080';
+
+        async function testDeviceListAPI() {
+            const resultDiv = document.getElementById('deviceApiTest');
+            resultDiv.innerHTML = '<span class="info">正在测试设备列表API...</span>';
+            
+            try {
+                const response = await fetch(BASE_URL + '/system/iotdevice/list', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'pageNum=1&pageSize=100'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    let result = '<span class="success">✅ 设备列表API调用成功！</span><br><br>';
+                    result += '<strong>返回的数据结构：</strong><br>';
+                    result += `<pre>${JSON.stringify(data, null, 2)}</pre><br>`;
+                    
+                    if (data.rows && data.rows.length > 0) {
+                        result += '<strong>设备列表：</strong><br>';
+                        data.rows.forEach((device, index) => {
+                            result += `设备${index + 1}: ID=${device.deviceId}, 名称=${device.deviceName}, 类型=${device.deviceType}<br>`;
+                        });
+                    } else {
+                        result += '<span class="error">❌ 没有找到设备数据</span><br>';
+                    }
+                    
+                    resultDiv.innerHTML = result;
+                } else {
+                    resultDiv.innerHTML = '<span class="error">❌ API调用失败: ' + response.status + ' ' + response.statusText + '</span>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = '<span class="error">❌ API调用异常: ' + error.message + '</span>';
+            }
+        }
+
+        // 页面加载时自动测试
+        window.onload = function() {
+            testDeviceListAPI();
+        };
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>植被分析记录 - RuoYi移动端</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 移动端样式 -->
+    <link th:href="@{/mobile/css/mobile.css}" rel="stylesheet"/>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <header class="mobile-header">
+        <div class="header-left">
+            <i class="back-btn fas fa-arrow-left"></i>
+        </div>
+        <div class="header-title">分析记录</div>
+        <div class="header-right">
+            <i class="header-action fas fa-plus" onclick="goToAnalyze()"></i>
+        </div>
+    </header>
+    
+    <!-- 内容区域 -->
+    <main class="mobile-content">
+        <!-- 统计信息 -->
+        <div class="container" style="padding-top: 0;">
+            <div class="card" style="background: linear-gradient(135deg, #52c41a, #7dd956); color: white;">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; text-align: center;">
+                    <div>
+                        <div style="font-size: 24px; font-weight: bold;" id="totalCount">0</div>
+                        <div style="font-size: 13px; opacity: 0.9; margin-top: 5px;">总记录数</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 24px; font-weight: bold;" id="avgCoverage">0%</div>
+                        <div style="font-size: 13px; opacity: 0.9; margin-top: 5px;">平均覆盖率</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 24px; font-weight: bold;" id="latestCoverage">0%</div>
+                        <div style="font-size: 13px; opacity: 0.9; margin-top: 5px;">最新覆盖率</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 筛选栏 -->
+        <div style="padding: 10px 15px; background: white; border-bottom: 1px solid #e8e8e8; display: flex; gap: 8px; align-items: center; overflow-x: auto;">
+            <i class="fas fa-filter" style="color: #666;"></i>
+            <span class="badge badge-primary" onclick="filterByTime('all')" style="cursor: pointer; padding: 5px 12px;">
+                全部
+            </span>
+            <span class="badge badge-success" onclick="filterByTime('today')" style="cursor: pointer; padding: 5px 12px;">
+                今天
+            </span>
+            <span class="badge badge-warning" onclick="filterByTime('week')" style="cursor: pointer; padding: 5px 12px;">
+                本周
+            </span>
+            <span class="badge badge-danger" onclick="filterByTime('month')" style="cursor: pointer; padding: 5px 12px;">
+                本月
+            </span>
+        </div>
+        
+        <!-- 分析记录列表 -->
+        <div class="container">
+            <div id="analysisList">
+                <!-- 记录项将通过JS动态加载 -->
+            </div>
+            
+            <!-- 加载更多 -->
+            <div id="loadMore" style="text-align: center; padding: 20px; display: none;">
+                <button class="btn btn-primary" onclick="loadMoreRecords()">
+                    加载更多
+                </button>
+            </div>
+            
+            <!-- 没有更多 -->
+            <div id="noMore" style="text-align: center; padding: 20px; color: #999; font-size: 14px; display: none;">
+                没有更多数据了
+            </div>
+        </div>
+    </main>
+    
+    <!-- 底部导航 -->
+    <nav class="mobile-footer">
+        <a class="footer-item" href="/m/index">
+            <i class="footer-icon fas fa-home"></i>
+            <span>首页</span>
+        </a>
+        <a class="footer-item" href="/m/device/list">
+            <i class="footer-icon fas fa-microchip"></i>
+            <span>设备</span>
+        </a>
+        <a class="footer-item active" href="/m/vegetation/list">
+            <i class="footer-icon fas fa-leaf"></i>
+            <span>植被</span>
+        </a>
+        <a class="footer-item" href="/m/profile">
+            <i class="footer-icon fas fa-user"></i>
+            <span>我的</span>
+        </a>
+    </nav>
+    
+    <!-- jQuery -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    
+    <!-- 移动端JS -->
+    <script th:src="@{/mobile/js/mobile.js}"></script>
+    
+    <script>
+    let currentPage = 1;
+    let currentFilter = 'all';
+    let totalPages = 1;
+    
+    $(function() {
+        // 检查登录
+        if (!checkLogin()) return;
+        
+        // 加载统计信息
+        loadStatistics();
+        
+        // 加载分析记录
+        loadAnalysisList();
+    });
+    
+    // 加载统计信息
+    async function loadStatistics() {
+        try {
+            const result = await API.getVegetationStatistics();
+            
+            if (result && (result.code === 0 || result.code === 200)) {
+                $('#totalCount').text(result.totalCount || 0);
+                $('#avgCoverage').text(result.avgCoverageRate ? parseFloat(result.avgCoverageRate).toFixed(2) + '%' : '0%');
+                $('#latestCoverage').text(result.latestCoverageRate ? result.latestCoverageRate.toFixed(2) + '%' : '0%');
+            }
+        } catch (error) {
+            console.error('Load statistics error:', error);
+        }
+    }
+    
+    // 按时间筛选
+    function filterByTime(filter) {
+        currentFilter = filter;
+        currentPage = 1;
+        loadAnalysisList();
+        
+        // 更新标签样式
+        $('.badge').removeClass('badge-primary').addClass('badge-success badge-danger badge-warning');
+        event.target.classList.remove('badge-success', 'badge-danger', 'badge-warning');
+        event.target.classList.add('badge-primary');
+    }
+    
+    // 加载分析记录列表
+    async function loadAnalysisList(append = false) {
+        try {
+            if (!append) {
+                showLoading('加载中...');
+            }
+            
+            const params = {
+                pageNum: currentPage,
+                pageSize: 10
+            };
+            
+            // 根据筛选条件添加日期参数
+            if (currentFilter !== 'all') {
+                const now = new Date();
+                let startDate = '';
+                
+                if (currentFilter === 'today') {
+                    startDate = formatDate(now, 'YYYY-MM-DD');
+                } else if (currentFilter === 'week') {
+                    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    startDate = formatDate(weekAgo, 'YYYY-MM-DD');
+                } else if (currentFilter === 'month') {
+                    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    startDate = formatDate(monthAgo, 'YYYY-MM-DD');
+                }
+                
+                if (startDate) {
+                    params.startDate = startDate;
+                    params.endDate = formatDate(now, 'YYYY-MM-DD');
+                }
+            }
+            
+            const result = await API.getVegetationList(params);
+            
+            if (result && (result.code === 0 || result.code === 200)) {
+                if (result.rows && result.rows.length > 0) {
+                    const html = result.rows.map(item => createAnalysisCard(item)).join('');
+                    
+                    if (append) {
+                        $('#analysisList').append(html);
+                    } else {
+                        $('#analysisList').html(html);
+                    }
+                    
+                    // 计算总页数
+                    totalPages = Math.ceil(result.total / 10);
+                    
+                    // 显示/隐藏加载更多按钮
+                    if (currentPage < totalPages) {
+                        $('#loadMore').show();
+                        $('#noMore').hide();
+                    } else {
+                        $('#loadMore').hide();
+                        $('#noMore').show();
+                    }
+                } else {
+                    if (!append) {
+                        $('#analysisList').html(`
+                            <div class="empty-state">
+                                <i class="fas fa-leaf empty-icon"></i>
+                                <p class="empty-text">暂无分析记录</p>
+                                <button class="btn btn-primary mt-15" onclick="goToAnalyze()">
+                                    <i class="fas fa-camera"></i> 立即分析
+                                </button>
+                            </div>
+                        `);
+                    }
+                    $('#loadMore').hide();
+                    $('#noMore').hide();
+                }
+            }
+            
+            hideLoading();
+        } catch (error) {
+            hideLoading();
+            console.error('Load analysis list error:', error);
+            showToast('加载失败，请重试');
+        }
+    }
+    
+    // 加载更多
+    function loadMoreRecords() {
+        currentPage++;
+        loadAnalysisList(true);
+    }
+    
+    // 创建分析记录卡片
+    function createAnalysisCard(item) {
+        const rate = item.coverageRate ? item.coverageRate.toFixed(2) : '0.00';
+        const rateColor = rate >= 80 ? '#52c41a' : rate >= 60 ? '#faad14' : '#f5222d';
+        
+        return `
+            <div class="card" onclick="viewDetail(${item.id})">
+                <div class="card-title">
+                    <div style="display: flex; align-items: center;">
+                        <i class="fas fa-leaf" style="color: ${rateColor}; margin-right: 8px;"></i>
+                        <span>${item.fieldName || '未命名地块'}</span>
+                    </div>
+                    <span style="font-size: 20px; font-weight: bold; color: ${rateColor};">${rate}%</span>
+                </div>
+                <div class="card-content">
+                    ${item.samplingPoint ? `
+                    <div style="margin-bottom: 8px;">
+                        <i class="fas fa-map-marker-alt" style="width: 20px; color: #666;"></i>
+                        <span style="color: #666;">采样点: ${item.samplingPoint}</span>
+                    </div>
+                    ` : ''}
+                    <div style="margin-bottom: 8px;">
+                        <i class="fas fa-image" style="width: 20px; color: #666;"></i>
+                        <span style="color: #666;">植被像素: ${(item.vegetationPixels || 0).toLocaleString()}</span>
+                    </div>
+                    <div style="margin-bottom: 8px;">
+                        <i class="fas fa-expand" style="width: 20px; color: #666;"></i>
+                        <span style="color: #666;">总像素: ${(item.totalPixels || 0).toLocaleString()}</span>
+                    </div>
+                    <div>
+                        <i class="fas fa-clock" style="width: 20px; color: #666;"></i>
+                        <span style="color: #999; font-size: 13px;">${formatDate(item.analysisTime)}</span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <span class="badge badge-success">
+                        <i class="fas fa-check"></i> 已完成
+                    </span>
+                    <i class="fas fa-chevron-right" style="color: #999;"></i>
+                </div>
+            </div>
+        `;
+    }
+    
+    // 查看详情
+    function viewDetail(id) {
+        showToast('功能开发中...');
+        // TODO: 跳转到详情页面
+        // window.location.href = `/m/vegetation/detail?id=${id}`;
+    }
+    
+    // 跳转到分析页面
+    function goToAnalyze() {
+        window.location.href = '/m/vegetation/analyze';
+    }
+    </script>
+</body>
+</html>
+
+
+

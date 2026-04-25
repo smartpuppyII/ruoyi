@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('物联网设备列表')" />
+</head>
+<body class="gray-bg">
+     <div class="container-div">
+        <div class="row">
+            <div class="col-sm-12 search-collapse">
+                <form id="formId">
+                    <div class="select-list">
+                        <ul>
+                            <li>
+                                <label>设备名称：</label>
+                                <input type="text" name="deviceName"/>
+                            </li>
+                            <li>
+                                <label>设备类型：</label>
+                                <select name="deviceType">
+                                    <option value="">所有</option>
+                                    <option value="temperature">温度传感器</option>
+                                    <option value="humidity">湿度传感器</option>
+                                    <option value="pressure">压力传感器</option>
+                                    <option value="modbus">Modbus设备</option>
+                                </select>
+                            </li>
+                            <li>
+                                <label>设备状态：</label>
+                                <select name="status">
+                                    <option value="">所有</option>
+                                    <option value="0">正常</option>
+                                    <option value="1">停用</option>
+                                </select>
+                            </li>
+                            <li>
+                                <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i class="fa fa-search"></i>&nbsp;搜索</a>
+                                <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i class="fa fa-refresh"></i>&nbsp;重置</a>
+                            </li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+
+            <div class="btn-group-sm" id="toolbar" role="group">
+                <a class="btn btn-success" onclick="$.operate.add()" shiro:hasPermission="system:iotdevice:add">
+                    <i class="fa fa-plus"></i> 添加
+                </a>
+                <a class="btn btn-primary single disabled" onclick="$.operate.edit()" shiro:hasPermission="system:iotdevice:edit">
+                    <i class="fa fa-edit"></i> 修改
+                </a>
+                <a class="btn btn-danger multiple disabled" onclick="$.operate.removeAll()" shiro:hasPermission="system:iotdevice:remove">
+                    <i class="fa fa-remove"></i> 删除
+                </a>
+                <a class="btn btn-warning" onclick="$.table.exportExcel()" shiro:hasPermission="system:iotdevice:export">
+                    <i class="fa fa-download"></i> 导出
+                </a>
+            </div>
+            <div class="col-sm-12 select-table table-striped">
+                <table id="bootstrap-table"></table>
+            </div>
+        </div>
+    </div>
+    <th:block th:include="include :: footer" />
+    <script th:inline="javascript">
+        var editFlag = [[${@permission.hasPermi('system:iotdevice:edit')}]];
+        var removeFlag = [[${@permission.hasPermi('system:iotdevice:remove')}]];
+        var prefix = ctx + "system/iotdevice";
+
+        $(function() {
+            var options = {
+                url: prefix + "/list",
+                createUrl: prefix + "/add",
+                updateUrl: prefix + "/edit/{id}",
+                removeUrl: prefix + "/remove",
+                exportUrl: prefix + "/export",
+                modalName: "物联网设备",
+                columns: [{
+                    checkbox: true
+                },
+                {
+                    field: 'deviceId',
+                    title: '设备ID',
+                    visible: false
+                },
+                {
+                    field: 'deviceName',
+                    title: '设备名称'
+                },
+                {
+                    field: 'deviceType',
+                    title: '设备类型',
+                    formatter: function(value, row, index) {
+                        if (value === 'temperature') {
+                            return '<span class="badge badge-primary">温度传感器</span>';
+                        } else if (value === 'humidity') {
+                            return '<span class="badge badge-info">湿度传感器</span>';
+                        } else if (value === 'pressure') {
+                            return '<span class="badge badge-warning">压力传感器</span>';
+                        } else if (value === 'modbus') {
+                            return '<span class="badge badge-success">Modbus设备</span>';
+                        }
+                        return value;
+                    }
+                },
+                {
+                    field: 'mqttPubTopic',
+                    title: '发布主题'
+                },
+                {
+                    field: 'mqttSubTopic',
+                    title: '订阅主题'
+                },
+                {
+                    field: 'status',
+                    title: '设备状态',
+                    formatter: function(value, row, index) {
+                        return value === '0' ? 
+                            '<span class="badge badge-primary">正常</span>' : 
+                            '<span class="badge badge-danger">停用</span>';
+                    }
+                },
+                {
+                    field: 'lastCommunication',
+                    title: '最后通信时间'
+                },
+                {
+                    field: 'signalStrength',
+                    title: '信号强度',
+                    formatter: function(value, row, index) {
+                        if (value === null || value === undefined) {
+                            return '-';
+                        }
+                        
+                        var signalClass = 'danger';
+                        if (value > 80) {
+                            signalClass = 'success';
+                        } else if (value > 60) {
+                            signalClass = 'warning';
+                        }
+                        
+                        var html = '<div class="progress progress-xs">' +
+                            '<div class="progress-bar progress-bar-' + signalClass + '" style="width: ' + value + '%"></div>' +
+                            '</div>' +
+                            '<small>' + value + '%</small>';
+                        return html;
+                    }
+                },
+                {
+                    title: '操作',
+                    align: 'center',
+                    formatter: function(value, row, index) {
+                        var actions = [];
+                        actions.push('<a class="btn btn-success btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="$.operate.edit(\'' + row.deviceId + '\')"><i class="fa fa-edit"></i>编辑</a> ');
+                        actions.push('<a class="btn btn-danger btn-xs ' + removeFlag + '" href="javascript:void(0)" onclick="$.operate.remove(\'' + row.deviceId + '\')"><i class="fa fa-remove"></i>删除</a> ');
+                        actions.push('<a class="btn btn-info btn-xs" href="javascript:void(0)" onclick="viewData(\'' + row.deviceId + '\')"><i class="fa fa-bar-chart"></i>数据</a> ');
+                        actions.push('<a class="btn btn-primary btn-xs" href="javascript:void(0)" onclick="sendCommand(\'' + row.deviceId + '\')"><i class="fa fa-terminal"></i>命令</a>');
+                        return actions.join('');
+                    }
+                }]
+            };
+            $.table.init(options);
+        });
+
+        function viewData(deviceId) {
+            var url = ctx + 'system/iot/waveform?deviceId=' + deviceId;
+            $.modal.openTab('波形显示', url);
+        }
+        
+        function sendCommand(deviceId) {
+            layer.prompt({
+                formType: 2,
+                title: '发送命令到设备',
+                area: ['400px', '200px'],
+                btn: ['发送', '取消'],
+                content: '{"cmd":"read","addr":0,"len":10}'
+            }, function(value, index, elem) {
+                $.ajax({
+                    type: "POST",
+                    url: ctx + "system/iotmqtt/send/" + deviceId,
+                    data: {
+                        "command": value
+                    },
+                    success: function(result) {
+                        if (result.code == 0) {
+                            $.modal.msgSuccess("命令发送成功");
+                        } else {
+                            $.modal.msgError(result.msg);
+                        }
+                        layer.close(index);
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html>

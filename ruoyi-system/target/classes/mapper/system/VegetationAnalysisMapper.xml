@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.system.mapper.VegetationAnalysisMapper">
+    
+    <resultMap type="VegetationAnalysis" id="VegetationAnalysisResult">
+        <result property="id"    column="id"    />
+        <result property="imageName"    column="image_name"    />
+        <result property="imagePath"    column="image_path"    />
+        <result property="coverageRate"    column="coverage_rate"    />
+        <result property="greenPixelCount"    column="green_pixel_count"    />
+        <result property="totalPixelCount"    column="total_pixel_count"    />
+        <result property="analysisTime"    column="analysis_time"    />
+        <result property="deviceId"    column="device_id"    />
+        <result property="createBy"    column="create_by"    />
+        <result property="createTime"    column="create_time"    />
+        <result property="updateBy"    column="update_by"    />
+        <result property="updateTime"    column="update_time"    />
+        <result property="remark"    column="remark"    />
+    </resultMap>
+
+    <sql id="selectVegetationAnalysisVo">
+        select id, image_name, image_path, coverage_rate, green_pixel_count, total_pixel_count, analysis_time, device_id, create_by, create_time, update_by, update_time, remark from vegetation_analysis
+    </sql>
+
+    <select id="selectVegetationAnalysisList" parameterType="VegetationAnalysis" resultMap="VegetationAnalysisResult">
+        <include refid="selectVegetationAnalysisVo"/>
+        <where>  
+            <if test="imageName != null  and imageName != ''"> and image_name like concat('%', #{imageName}, '%')</if>
+            <if test="imagePath != null  and imagePath != ''"> and image_path = #{imagePath}</if>
+            <if test="coverageRate != null "> and coverage_rate = #{coverageRate}</if>
+            <if test="greenPixelCount != null "> and green_pixel_count = #{greenPixelCount}</if>
+            <if test="totalPixelCount != null "> and total_pixel_count = #{totalPixelCount}</if>
+            <if test="analysisTime != null "> and analysis_time = #{analysisTime}</if>
+            <if test="deviceId != null "> and device_id = #{deviceId}</if>
+        </where>
+        order by analysis_time desc
+    </select>
+    
+    <select id="selectVegetationAnalysisById" parameterType="Long" resultMap="VegetationAnalysisResult">
+        <include refid="selectVegetationAnalysisVo"/>
+        where id = #{id}
+    </select>
+
+    <select id="selectLatestVegetationAnalysisByDeviceId" parameterType="Long" resultMap="VegetationAnalysisResult">
+        <include refid="selectVegetationAnalysisVo"/>
+        where device_id = #{deviceId}
+        order by analysis_time desc
+        limit 1
+    </select>
+        
+    <insert id="insertVegetationAnalysis" parameterType="VegetationAnalysis" useGeneratedKeys="true" keyProperty="id">
+        insert into vegetation_analysis
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="imageName != null and imageName != ''">image_name,</if>
+            <if test="imagePath != null and imagePath != ''">image_path,</if>
+            <if test="coverageRate != null">coverage_rate,</if>
+            <if test="greenPixelCount != null">green_pixel_count,</if>
+            <if test="totalPixelCount != null">total_pixel_count,</if>
+            <if test="analysisTime != null">analysis_time,</if>
+            <if test="deviceId != null">device_id,</if>
+            <if test="createBy != null">create_by,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateBy != null">update_by,</if>
+            <if test="updateTime != null">update_time,</if>
+            <if test="remark != null">remark,</if>
+         </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="imageName != null and imageName != ''">#{imageName},</if>
+            <if test="imagePath != null and imagePath != ''">#{imagePath},</if>
+            <if test="coverageRate != null">#{coverageRate},</if>
+            <if test="greenPixelCount != null">#{greenPixelCount},</if>
+            <if test="totalPixelCount != null">#{totalPixelCount},</if>
+            <if test="analysisTime != null">#{analysisTime},</if>
+            <if test="deviceId != null">#{deviceId},</if>
+            <if test="createBy != null">#{createBy},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateBy != null">#{updateBy},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+            <if test="remark != null">#{remark},</if>
+         </trim>
+    </insert>
+
+    <update id="updateVegetationAnalysis" parameterType="VegetationAnalysis">
+        update vegetation_analysis
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="imageName != null and imageName != ''">image_name = #{imageName},</if>
+            <if test="imagePath != null and imagePath != ''">image_path = #{imagePath},</if>
+            <if test="coverageRate != null">coverage_rate = #{coverageRate},</if>
+            <if test="greenPixelCount != null">green_pixel_count = #{greenPixelCount},</if>
+            <if test="totalPixelCount != null">total_pixel_count = #{totalPixelCount},</if>
+            <if test="analysisTime != null">analysis_time = #{analysisTime},</if>
+            <if test="deviceId != null">device_id = #{deviceId},</if>
+            <if test="updateBy != null">update_by = #{updateBy},</if>
+            <if test="updateTime != null">update_time = #{updateTime},</if>
+            <if test="remark != null">remark = #{remark},</if>
+        </trim>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteVegetationAnalysisById" parameterType="Long">
+        delete from vegetation_analysis where id = #{id}
+    </delete>
+
+    <delete id="deleteVegetationAnalysisByIds" parameterType="String">
+        delete from vegetation_analysis where id in 
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+</mapper>
+
