@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>设备列表 - RuoYi移动端</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 移动端样式 -->
+    <link th:href="@{/mobile/css/mobile.css}" rel="stylesheet"/>
+</head>
+<body>
+    <!-- 顶部导航 -->
+    <header class="mobile-header">
+        <div class="header-left">
+            <i class="back-btn fas fa-arrow-left"></i>
+        </div>
+        <div class="header-title">设备列表</div>
+        <div class="header-right">
+            <i class="header-action fas fa-search" onclick="toggleSearch()"></i>
+        </div>
+    </header>
+    
+    <!-- 内容区域 -->
+    <main class="mobile-content">
+        <!-- 搜索栏 -->
+        <div id="searchBar" style="display: none; padding: 10px 15px; background: white; border-bottom: 1px solid #e8e8e8;">
+            <input type="text" class="form-control" id="searchInput" placeholder="搜索设备名称..." onkeyup="searchDevices()">
+        </div>
+        
+        <!-- 筛选标签 -->
+        <div style="padding: 10px 15px; background: white; border-bottom: 1px solid #e8e8e8; display: flex; gap: 8px; overflow-x: auto;">
+            <span class="badge badge-primary" onclick="filterDevices('all')" style="cursor: pointer; padding: 5px 12px;">
+                全部
+            </span>
+            <span class="badge badge-success" onclick="filterDevices('online')" style="cursor: pointer; padding: 5px 12px;">
+                在线
+            </span>
+            <span class="badge badge-danger" onclick="filterDevices('offline')" style="cursor: pointer; padding: 5px 12px;">
+                离线
+            </span>
+        </div>
+        
+        <!-- 设备列表 -->
+        <div class="container">
+            <div id="deviceList">
+                <!-- 设备项将通过JS动态加载 -->
+            </div>
+            
+            <!-- 加载更多 -->
+            <div id="loadMore" style="text-align: center; padding: 20px; display: none;">
+                <button class="btn btn-primary" onclick="loadMoreDevices()">
+                    加载更多
+                </button>
+            </div>
+            
+            <!-- 没有更多 -->
+            <div id="noMore" style="text-align: center; padding: 20px; color: #999; font-size: 14px; display: none;">
+                没有更多数据了
+            </div>
+        </div>
+    </main>
+    
+    <!-- 底部导航 -->
+    <nav class="mobile-footer">
+        <a class="footer-item" href="/m/index">
+            <i class="footer-icon fas fa-home"></i>
+            <span>首页</span>
+        </a>
+        <a class="footer-item active" href="/m/device/list">
+            <i class="footer-icon fas fa-microchip"></i>
+            <span>设备</span>
+        </a>
+        <a class="footer-item" href="/m/vegetation/list">
+            <i class="footer-icon fas fa-leaf"></i>
+            <span>植被</span>
+        </a>
+        <a class="footer-item" href="/m/profile">
+            <i class="footer-icon fas fa-user"></i>
+            <span>我的</span>
+        </a>
+    </nav>
+    
+    <!-- jQuery -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    
+    <!-- 移动端JS -->
+    <script th:src="@{/mobile/js/mobile.js}"></script>
+    
+    <script>
+    let currentPage = 1;
+    let currentFilter = 'all';
+    let currentSearch = '';
+    let totalPages = 1;
+    
+    $(function() {
+        // 检查登录
+        if (!checkLogin()) return;
+        
+        // 加载设备列表
+        loadDevices();
+    });
+    
+    // 切换搜索栏
+    function toggleSearch() {
+        const searchBar = $('#searchBar');
+        if (searchBar.is(':visible')) {
+            searchBar.hide();
+            $('#searchInput').val('');
+            currentSearch = '';
+            loadDevices();
+        } else {
+            searchBar.show();
+            $('#searchInput').focus();
+        }
+    }
+    
+    // 搜索设备
+    const searchDevices = debounce(function() {
+        currentSearch = $('#searchInput').val().trim();
+        currentPage = 1;
+        loadDevices();
+    }, 500);
+    
+    // 筛选设备
+    function filterDevices(filter) {
+        currentFilter = filter;
+        currentPage = 1;
+        loadDevices();
+        
+        // 更新标签样式
+        $('.badge').removeClass('badge-primary').addClass('badge-success badge-danger badge-warning');
+        event.target.classList.remove('badge-success', 'badge-danger', 'badge-warning');
+        event.target.classList.add('badge-primary');
+    }
+    
+    // 加载设备列表
+    async function loadDevices(append = false) {
+        try {
+            if (!append) {
+                showLoading('加载中...');
+            }
+            
+            const params = {
+                pageNum: currentPage,
+                pageSize: 10
+            };
+            
+            if (currentSearch) {
+                params.deviceName = currentSearch;
+            }
+            
+            if (currentFilter === 'online') {
+                params.status = '1';
+            } else if (currentFilter === 'offline') {
+                params.status = '0';
+            }
+            
+            const result = await API.getDevices(params);
+            
+            if (result.code === 200) {
+                if (result.rows && result.rows.length > 0) {
+                    const html = result.rows.map(device => createDeviceCard(device)).join('');
+                    
+                    if (append) {
+                        $('#deviceList').append(html);
+                    } else {
+                        $('#deviceList').html(html);
+                    }
+                    
+                    // 计算总页数
+                    totalPages = Math.ceil(result.total / 10);
+                    
+                    // 显示/隐藏加载更多按钮
+                    if (currentPage < totalPages) {
+                        $('#loadMore').show();
+                        $('#noMore').hide();
+                    } else {
+                        $('#loadMore').hide();
+                        $('#noMore').show();
+                    }
+                } else {
+                    if (!append) {
+                        $('#deviceList').html(`
+                            <div class="empty-state">
+                                <i class="fas fa-microchip empty-icon"></i>
+                                <p class="empty-text">暂无设备数据</p>
+                            </div>
+                        `);
+                    }
+                    $('#loadMore').hide();
+                    $('#noMore').hide();
+                }
+            }
+            
+            hideLoading();
+        } catch (error) {
+            hideLoading();
+            console.error('Load devices error:', error);
+            showToast('加载失败，请重试');
+        }
+    }
+    
+    // 加载更多
+    function loadMoreDevices() {
+        currentPage++;
+        loadDevices(true);
+    }
+    
+    // 创建设备卡片
+    function createDeviceCard(device) {
+        const statusClass = device.status == '1' ? 'badge-success' : 'badge-danger';
+        const statusText = device.status == '1' ? '在线' : '离线';
+        const iconColor = device.status == '1' ? '#52c41a' : '#999';
+        
+        return `
+            <div class="card" onclick="goToDetail(${device.deviceId})">
+                <div class="card-title">
+                    <div style="display: flex; align-items: center;">
+                        <i class="fas fa-microchip" style="color: ${iconColor}; margin-right: 8px;"></i>
+                        <span>${device.deviceName || '未命名设备'}</span>
+                    </div>
+                    <span class="badge ${statusClass}">${statusText}</span>
+                </div>
+                <div class="card-content">
+                    <div style="margin-bottom: 8px;">
+                        <i class="fas fa-map-marker-alt" style="width: 20px; color: #666;"></i>
+                        <span style="color: #666;">${device.location || '位置未知'}</span>
+                    </div>
+                    <div style="margin-bottom: 8px;">
+                        <i class="fas fa-tag" style="width: 20px; color: #666;"></i>
+                        <span style="color: #666;">${device.deviceType || '类型未知'}</span>
+                    </div>
+                    ${device.lastUpdateTime ? `
+                    <div>
+                        <i class="fas fa-clock" style="width: 20px; color: #666;"></i>
+                        <span style="color: #999; font-size: 13px;">${formatDate(device.lastUpdateTime)}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+    
+    // 跳转到详情页
+    function goToDetail(deviceId) {
+        window.location.href = `/m/device/detail?id=${deviceId}`;
+    }
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
